@@ -1,6 +1,6 @@
 {
-  "name": "Jugadas",
-  "short_name": "Jugadas",
+  "name": "TimeoutBoard",
+  "short_name": "TimeoutBoard",
   "description": "Vídeos de jugadas para tiempos muertos, con pizarra para dibujar",
   "start_url": "./",
   "scope": "./",
