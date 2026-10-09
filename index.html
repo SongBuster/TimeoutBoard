@@ -24,6 +24,8 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+/* iOS (app instalada): si el documento llega a desplazarse, los toques se detectan descolocados */
+html,body{position:fixed;inset:0;overflow:hidden}
 button,select,input{font:inherit;color:inherit}
 button{touch-action:manipulation;cursor:pointer}
 .hidden{display:none!important}
@@ -232,7 +234,7 @@ details summary::-webkit-details-marker{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 
 /* =========================================================
    IndexedDB
@@ -902,8 +904,14 @@ async function requestWake() {
   try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch (e) {}
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWake(); });
-window.addEventListener('resize', layout);
-window.addEventListener('orientationchange', () => setTimeout(layout, 250));
+// iOS deja a veces la página desplazada (teclado, rotación) y los toques quedan descolocados: volver a 0,0
+function resetScroll() { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); }
+window.addEventListener('scroll', resetScroll);
+if (window.visualViewport) visualViewport.addEventListener('resize', resetScroll);
+document.addEventListener('focusout', () => setTimeout(resetScroll, 100));
+document.addEventListener('gesturestart', e => e.preventDefault());   // sin zoom con pellizco
+window.addEventListener('resize', () => { resetScroll(); layout(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { resetScroll(); layout(); }, 250));
 
 (async function init() {
   try {
