@@ -72,23 +72,23 @@ header.top h1 span{color:var(--accent)}
 
 /* ---------- PLAYER ---------- */
 #player{position:fixed;inset:0;background:#071015;z-index:10}
-#stage{position:absolute;top:var(--sat);bottom:var(--sab);left:var(--sal);right:var(--sar);
+#stage,#aStage{position:absolute;top:var(--sat);bottom:var(--sab);left:var(--sal);right:var(--sar);
   display:flex;align-items:center;justify-content:center}
-#frame{position:relative;background:#22b0c2;box-shadow:0 0 0 1px #000}
-#frame video,#frame canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#frame,#aFrame{position:relative;background:#22b0c2;box-shadow:0 0 0 1px #000}
+#frame video,#frame canvas,#aFrame canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #frame video{object-fit:fill}
-#ink{touch-action:none}
+#ink,#aScene{touch-action:none}
 /* controles flotando sobre el vídeo */
 .ov{position:absolute;z-index:2;background:rgba(14,26,32,.84);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   border:1px solid var(--line);border-radius:16px}
-#ptop{position:absolute;z-index:2;top:calc(var(--sat) + 8px);left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);
+.topbar{position:absolute;z-index:2;top:calc(var(--sat) + 8px);left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);
   display:flex;gap:8px;align-items:center;pointer-events:none}
-#ptop > *{pointer-events:auto}
-#ptop .sp{flex:1;pointer-events:none}
-#ptop .iconbtn{background:rgba(14,26,32,.84);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-#ptop .iconbtn.on{background:var(--accent);border-color:var(--accent);color:#1b1300}
-#ptop .pill{position:static;min-width:0;max-width:45%;padding:5px 14px}
-#ptitle{font-size:20px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar > *{pointer-events:auto}
+.topbar .sp{flex:1;pointer-events:none}
+.topbar .iconbtn{background:rgba(14,26,32,.84);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.topbar .iconbtn.on{background:var(--accent);border-color:var(--accent);color:#1b1300}
+.topbar .pill{position:static;min-width:0;max-width:45%;padding:5px 14px}
+#ptitle,#aTitle{font-size:20px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pfam{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb{min-width:0;height:52px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);
   font-size:17px;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 6px;flex:none}
@@ -107,10 +107,10 @@ header.top h1 span{color:var(--accent)}
 #palette .sw{width:50px;height:38px}
 .sep{height:1px;background:var(--line);margin:2px 0;flex:none}
 /* barra de vídeo (abajo, siempre visible) */
-#gVideo{left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 8px);
+.bar{left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 8px);
   width:min(780px,calc(100% - 16px - var(--sal) - var(--sar)));display:flex;gap:6px;align-items:center;padding:6px}
-#gVideo .tb{width:50px}
-#gVideo .tb.play{width:66px}
+.bar .tb{width:50px}
+.bar .tb.play{width:66px}
 #gVideo .tl{flex:1;min-width:90px;display:flex;flex-direction:column;padding:0 4px}
 #scrub{width:100%;height:30px;margin:0;accent-color:var(--accent)}
 #tlabel{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;text-align:center}
@@ -120,7 +120,15 @@ header.top h1 span{color:var(--accent)}
 #pdesc.none{color:var(--muted);font-style:italic}
 #hint{position:absolute;z-index:2;left:50%;top:calc(var(--sat) + 72px);transform:translateX(-50%);background:rgba(5,12,16,.8);
   padding:8px 14px;border-radius:20px;font-size:14px;color:var(--muted);pointer-events:none;transition:opacity .4s;white-space:nowrap}
-@media (max-width:700px){ #gVideo .tb{width:42px} #bCourt{display:none} }
+@media (max-width:700px){ .bar .tb{width:42px} #bCourt{display:none} }
+/* ---------- EDITOR DE JUGADAS ---------- */
+#animEd{position:fixed;inset:0;background:#071015;z-index:15}
+#aHint{font-size:13px;color:var(--muted);line-height:1.3;white-space:normal;margin-top:2px}
+#aTop .pill{max-width:calc(100% - 190px)}
+#aSteps{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-left:2px}
+#aSteps::-webkit-scrollbar{display:none}
+#aSteps .chip{height:50px;min-width:50px;padding:0 14px;border-radius:12px}
+#aBar .tb{width:auto;min-width:50px;padding:0 12px}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 
 /* ---------- MANAGE / EDIT (ventanas) ---------- */
@@ -163,6 +171,7 @@ header.top h1 span{color:var(--accent)}
   <header class="top">
     <h1>TimeoutBoard<span>.</span></h1>
     <input id="search" type="search" placeholder="Buscar: 722, koke, texaco…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button class="iconbtn" id="btnNew" title="Crear una jugada animada">＋ Jugada</button>
     <button class="iconbtn" id="btnBoard" title="Pizarra en blanco">✏️ Pizarra</button>
     <button class="iconbtn" id="btnManage" title="Gestionar">⚙︎</button>
   </header>
@@ -176,17 +185,19 @@ header.top h1 span{color:var(--accent)}
     <div id="frame">
       <canvas id="court"></canvas>
       <video id="vid" playsinline webkit-playsinline muted preload="auto"></video>
+      <canvas id="anim"></canvas>
       <canvas id="ink"></canvas>
     </div>
   </div>
   <div id="hint">Lápiz: dibujar · Dedo: tocar para pausar</div>
 
-  <div id="ptop">
+  <div id="ptop" class="topbar">
     <button class="iconbtn" id="btnBack" title="Volver">◀︎</button>
     <div class="ov pill"><div id="ptitle"></div><div id="pfam"></div></div>
     <div class="sp"></div>
     <button class="iconbtn on" id="btnDraw" title="Mostrar u ocultar las herramientas de dibujo">✏️</button>
     <button class="iconbtn" id="btnInfo" title="Explicación">ℹ︎</button>
+    <button class="iconbtn" id="btnAnim" title="Crear o editar la animación">🎬</button>
     <button class="iconbtn" id="btnEdit" title="Editar la ficha de la jugada">✎</button>
   </div>
 
@@ -207,7 +218,7 @@ header.top h1 span{color:var(--accent)}
 
   <div id="info" class="ov hidden"><div id="pdesc"></div></div>
 
-  <div id="gVideo" class="ov">
+  <div id="gVideo" class="ov bar">
     <button class="tb" id="bRestart" title="Desde el principio">⏮</button>
     <button class="tb" id="bBack" title="-1 s">−1s</button>
     <button class="tb play" id="bPlay">▶︎</button>
@@ -216,6 +227,24 @@ header.top h1 span{color:var(--accent)}
     <button class="tb" id="bSpeed" title="Velocidad">1×</button>
     <button class="tb on" id="bLoop" title="Bucle">🔁</button>
     <button class="tb" id="bCourt" title="Ocultar vídeo y dibujar sobre pista vacía">Pista</button>
+  </div>
+</section>
+
+<!-- ================= EDITOR DE JUGADAS ================= -->
+<section id="animEd" class="hidden">
+  <div id="aStage"><div id="aFrame"><canvas id="aCourt"></canvas><canvas id="aScene"></canvas></div></div>
+  <div id="aTop" class="topbar">
+    <button class="iconbtn" id="aCancel" title="Salir sin guardar">✕</button>
+    <div class="ov pill"><div id="aTitle">Nueva jugada</div><div id="aHint"></div></div>
+    <div class="sp"></div>
+    <button class="iconbtn save" id="aSave">Guardar</button>
+  </div>
+  <div id="aBar" class="ov bar">
+    <div id="aSteps"></div>
+    <button class="tb" id="aAdd" title="Añadir un paso">＋ Paso</button>
+    <button class="tb" id="aUndo" title="Deshacer">↶</button>
+    <button class="tb" id="aDel" title="Borrar el último paso">🗑</button>
+    <button class="tb play" id="aPlay" title="Ver la animación">▶︎</button>
   </div>
 </section>
 
@@ -264,7 +293,7 @@ header.top h1 span{color:var(--accent)}
 
 <script>
 'use strict';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 /* =========================================================
    IndexedDB
@@ -364,10 +393,18 @@ function videoItem(v) {
     famName: fam ? fam.nombre : 'Otras',
     famOrder: fam ? fam.order : 999,
     tags: play ? (play.etiquetas || []) : [],
-    desc: play ? play.descripcion : ''
+    desc: play ? play.descripcion : '',
+    anim: null
   };
 }
-function allItems() { return S.videos.map(videoItem); }
+// vídeos + jugadas del catálogo que tienen animación (y no vídeo)
+function allItems() {
+  const items = S.videos.map(videoItem);
+  const used = new Set(items.filter(i => i.play).map(i => i.play.id));
+  if (S.catalog) for (const p of S.catalog.jugadas || []) if (p.animacion && !used.has(p.id)) items.push(playItem(p));
+  return items;
+}
+const hasMedia = it => !!(it.video || it.anim);
 function playsWithoutVideo(items) {
   if (!S.catalog) return [];
   const used = new Set(items.filter(i => i.play).map(i => i.play.id));
@@ -376,7 +413,8 @@ function playsWithoutVideo(items) {
 function playItem(p) {
   const fam = FAMS.get(p.familia);
   return { key: 'p:' + p.id, video: null, play: p, name: p.nombre, famId: fam ? fam.id : 'otras',
-    famName: fam ? fam.nombre : 'Otras', famOrder: fam ? fam.order : 999, tags: p.etiquetas || [], desc: p.descripcion };
+    famName: fam ? fam.nombre : 'Otras', famOrder: fam ? fam.order : 999, tags: p.etiquetas || [], desc: p.descripcion,
+    anim: p.animacion || null };
 }
 const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
 function sortItems(a) { return a.sort((x, y) => (x.famOrder - y.famOrder) || collator.compare(x.name, y.name)); }
@@ -467,13 +505,13 @@ function renderHome() {
     list = items.filter(i => matchesQuery(i, q)).concat(playsWithoutVideo(items).filter(i => matchesQuery(i, q)));
   }
   sortItems(list);
-  if (q) list.sort((a, b) => (!!b.video - !!a.video));
+  if (q) list.sort((a, b) => hasMedia(b) - hasMedia(a));
   CURRENT_LIST = list;
 
   const grid = $('#grid');
-  if (!S.videos.length && !q) {
+  if (!items.length && !q) {
     grid.innerHTML = `<div class="empty"><p><b>Todavía no hay vídeos en este iPad.</b></p>
-      <p>Pulsa el botón e importa los MP4 de las jugadas (y el fichero <b>catalogo_jugadas.json</b> para clasificarlas y ver la explicación del entrenador).</p>
+      <p>Pulsa el botón e importa los MP4 de las jugadas (y el fichero <b>catalogo_jugadas.json</b> para clasificarlas y ver la explicación del entrenador), o crea una jugada animada con <b>＋ Jugada</b>.</p>
       <p><button class="bigbtn" id="emptyImport">＋ Importar vídeos</button></p></div>`;
     $('#emptyImport').onclick = () => $('#fileIn').click();
     return;
@@ -496,23 +534,205 @@ function renderHome() {
     }
     const fav = S.favs.has(it.key);
     const bg = it.video && it.video.thumb ? `style="background-image:url('${thumbURL(it.video)}')"` : '';
-    html += `<div class="card ${it.video ? '' : 'novideo'}" role="button" data-i="${idx}">
-      <div class="th" ${bg}>${it.video && it.video.thumb ? '' : '<canvas width="135" height="180"></canvas>'}
-        ${it.video ? '' : '<span class="badge">sin vídeo</span>'}
+    html += `<div class="card ${hasMedia(it) ? '' : 'novideo'}" role="button" data-i="${idx}">
+      <div class="th" ${bg}>${it.video && it.video.thumb ? '' : `<canvas width="270" height="360" data-i="${idx}"></canvas>`}
+        ${it.video ? '' : `<span class="badge">${it.anim ? '🎬 animada' : 'sin vídeo'}</span>`}
         <div class="nm">${esc(it.name)}</div></div>
       <div class="fam">${esc(it.famName)}</div>
-      ${it.video ? `<button class="star ${fav ? 'on' : ''}" data-star="${esc(it.key)}">${fav ? '★' : '☆'}</button>` : ''}
+      ${hasMedia(it) ? `<button class="star ${fav ? 'on' : ''}" data-star="${esc(it.key)}">${fav ? '★' : '☆'}</button>` : ''}
     </div>`;
   });
   html += '</div>';
   grid.innerHTML = html;
-  grid.querySelectorAll('.th canvas').forEach(c => drawCourt(c.getContext('2d'), c.width, c.height));
+  grid.querySelectorAll('.th canvas').forEach(c => {
+    const ctx = c.getContext('2d'), it = list[+c.dataset.i], W = c.width, H = c.height;
+    // mismo recorte que las miniaturas de los vídeos, para que la pista se vea más grande
+    ctx.setTransform(1 / 0.86, 0, 0, 1 / 0.86, -W * 0.06 / 0.86, -H * 0.07 / 0.86);
+    drawCourt(ctx, W, H);
+    if (it && it.anim) drawScene(ctx, W, H, animScene(it.anim, animTimeline(it.anim), 0));
+  });
+}
+
+/* =========================================================
+   ANIMACIÓN: jugadas creadas en la app (pasos con recorridos y pases)
+   anim = { v, pos:{EI:[x,y]…}, ball:'CT', steps:[{ moves:{id:[[x,y]…]}, pass:{to} | null }] }
+   Coordenadas 0–1 sobre el marco 3:4, igual que los trazos.
+   ========================================================= */
+const ATT = ['EI', 'LI', 'CT', 'LD', 'ED', 'PI'];
+const DEFAULT_POS = { EI: [0.80, 0.135], LI: [0.48, 0.17], CT: [0.40, 0.50], LD: [0.48, 0.83], ED: [0.80, 0.865], PI: [0.61, 0.50] };
+const A_HOLD0 = 1, A_GAP = 0.25, A_HOLD_END = 1.5, A_STEP_MIN = 1, A_SPEED = 0.22, A_BALL_SPEED = 0.7;
+const BALL_OFF = [0.04, 0.035];
+const TRAIL = '#10202a';
+const r4 = v => Math.round(v * 1e4) / 1e4;
+const clonePos = pos => Object.fromEntries(Object.entries(pos).map(([k, v]) => [k, v.slice()]));
+const adist = (a, b) => Math.hypot(a[0] - b[0], (a[1] - b[1]) * 4 / 3);   // en anchos de marco
+const ease = u => u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
+const ballXY = p => [p[0] + BALL_OFF[0], p[1] + BALL_OFF[1]];
+function newAnim() { return { v: 1, pos: clonePos(DEFAULT_POS), ball: 'CT', steps: [] }; }
+
+// estado (posiciones y quién tiene el balón) al empezar cada paso, más el final
+function animStates(a) {
+  const st = [{ pos: clonePos(a.pos), ball: a.ball }];
+  for (const s of a.steps) {
+    const prev = st[st.length - 1], pos = clonePos(prev.pos);
+    for (const id in s.moves) { const p = s.moves[id]; pos[id] = p[p.length - 1].slice(); }
+    st.push({ pos, ball: s.pass ? s.pass.to : prev.ball });
+  }
+  return st;
+}
+function animTimeline(a) {
+  const states = animStates(a), steps = [];
+  let t = A_HOLD0;
+  a.steps.forEach((s, i) => {
+    const start = states[i], end = states[i + 1], paths = {};
+    let maxLen = 0;
+    for (const id in s.moves) {
+      const pts = s.moves[id], cum = [0];
+      for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + adist(pts[k - 1], pts[k]));
+      paths[id] = { pts, cum, len: cum[cum.length - 1] };
+      maxLen = Math.max(maxLen, paths[id].len);
+    }
+    let dur = Math.max(A_STEP_MIN, maxLen / A_SPEED), flight = 0;
+    if (s.pass) { flight = Math.max(0.5, adist(start.pos[start.ball], end.pos[s.pass.to]) / A_BALL_SPEED); dur = Math.max(dur, flight); }
+    steps.push({ t0: t, dur, paths, flight, start, end, pass: s.pass ? { from: start.ball, to: s.pass.to } : null });
+    t += dur + A_GAP;
+  });
+  return { states, steps, total: t + A_HOLD_END };
+}
+function pointAt(path, d) {
+  const { pts, cum } = path;
+  if (d <= 0 || pts.length < 2) return pts[0].slice();
+  for (let k = 1; k < pts.length; k++) if (cum[k] >= d) {
+    const f = (d - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1);
+    return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * f, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * f];
+  }
+  return pts[pts.length - 1].slice();
+}
+// posiciones y balón en el instante t
+function animScene(a, tl, t) {
+  let sp = null, idx = -1;
+  tl.steps.forEach((x, i) => { if (t >= x.t0) { sp = x; idx = i; } });
+  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]) }; }
+  const lt = t - sp.t0;
+  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]) }; }
+  const e = ease(lt / sp.dur), pos = clonePos(sp.start.pos);
+  for (const id in sp.paths) pos[id] = pointAt(sp.paths[id], e * sp.paths[id].len);
+  let ball = ballXY(pos[sp.start.ball]);
+  if (sp.pass) {
+    const fs = sp.dur - sp.flight;   // el balón vuela al final del paso: llega cuando el receptor termina su carrera
+    if (lt >= fs) {
+      const f = ease((lt - fs) / sp.flight), a0 = ballXY(pos[sp.pass.from]), a1 = ballXY(pos[sp.pass.to]);
+      ball = [a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f];
+    }
+  }
+  return { pos, ball };
+}
+
+/* ---- dibujo de jugadores y balón (estilo de los vídeos) ---- */
+function drawToken(ctx, x, y, r, label, hl) {
+  ctx.save();
+  if (hl) { ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,210,31,.55)'; ctx.fill(); }
+  ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = r * 0.4; ctx.shadowOffsetY = r * 0.12;
+  const g = ctx.createLinearGradient(x, y - r, x, y + r);
+  g.addColorStop(0, '#7aa5ff'); g.addColorStop(1, '#2556e0');
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = r * 0.14; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${r * 0.78}px -apple-system, Helvetica, Arial, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x, y + r * 0.05);
+  ctx.restore();
+}
+function pentagon(ctx, x, y, r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) { const a = rot + i * Math.PI * 2 / 5; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  ctx.closePath(); ctx.fill();
+}
+function drawBall(ctx, x, y, r) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = r * 0.5; ctx.shadowOffsetY = r * 0.15;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#f7d117'; ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = '#1d2b4f';
+  pentagon(ctx, x, y, r * 0.38, -Math.PI / 2);
+  for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + Math.PI / 5 + i * Math.PI * 2 / 5; pentagon(ctx, x + Math.cos(a) * r * 0.98, y + Math.sin(a) * r * 0.98, r * 0.36, a); }
+  ctx.restore();
+  ctx.lineWidth = r * 0.1; ctx.strokeStyle = '#1d2b4f'; ctx.stroke();
+  ctx.restore();
+}
+// opts: { title, trails:[stroke], ghosts:{id:[x,y]}, hl:id }
+function drawScene(ctx, W, H, scene, opts = {}) {
+  const r = W * 0.03;
+  for (const t of opts.trails || []) drawStroke(ctx, t);
+  if (opts.ghosts) { ctx.save(); ctx.globalAlpha = 0.3; for (const id in opts.ghosts) drawToken(ctx, opts.ghosts[id][0] * W, opts.ghosts[id][1] * H, r, id); ctx.restore(); }
+  for (const id of ATT) if (scene.pos[id]) drawToken(ctx, scene.pos[id][0] * W, scene.pos[id][1] * H, r, id, opts.hl === id);
+  if (scene.ball) drawBall(ctx, scene.ball[0] * W, scene.ball[1] * H, r * 0.62);
+  if (opts.title) {
+    ctx.save(); ctx.fillStyle = '#0b1a20'; ctx.font = `500 ${W * 0.028}px -apple-system, Helvetica, Arial, sans-serif`;
+    ctx.textBaseline = 'top'; ctx.fillText(opts.title, W * 0.125, H * 0.128); ctx.restore();
+  }
+}
+
+// reproductor de animaciones con la misma interfaz que <video> (play, pause, currentTime, duration, loop, eventos)
+class AnimMedia extends EventTarget {
+  constructor(canvas) {
+    super();
+    this.c = canvas; this.data = null; this.tl = null; this.title = '';
+    this.paused = true; this.ended = false; this.loop = false; this.playbackRate = 1; this.duration = 0; this._t = 0;
+    this._step = this._step.bind(this);
+  }
+  load(data, title) {
+    this.data = data; this.title = title || ''; this.tl = animTimeline(data);
+    this.duration = this.tl.total; this._t = 0; this.ended = false;
+    this.render(); this.dispatchEvent(new Event('loadedmetadata'));
+  }
+  get currentTime() { return this._t; }
+  set currentTime(t) {
+    this._t = Math.max(0, Math.min(this.duration, t)); this.ended = false;
+    this.render(); this.dispatchEvent(new Event('seeked'));
+  }
+  play() {
+    if (!this.data || !this.paused) return Promise.resolve();
+    if (this._t >= this.duration) this._t = 0;
+    this.paused = false; this.ended = false; this._last = performance.now();
+    this._raf = requestAnimationFrame(this._step);
+    this.dispatchEvent(new Event('play'));
+    return Promise.resolve();
+  }
+  pause() {
+    if (this.paused) return;
+    this.paused = true; cancelAnimationFrame(this._raf);
+    this.dispatchEvent(new Event('pause'));
+  }
+  stop() { this.pause(); this.data = null; this.duration = 0; this._t = 0; this.c.getContext('2d').clearRect(0, 0, this.c.width, this.c.height); }
+  _step(now) {
+    this._t += (now - this._last) / 1000 * this.playbackRate; this._last = now;
+    if (this._t >= this.duration) {
+      if (this.loop) this._t = 0;
+      else {
+        this._t = this.duration; this.render();
+        this.paused = true; this.ended = true;
+        this.dispatchEvent(new Event('pause')); this.dispatchEvent(new Event('ended'));
+        return;
+      }
+    }
+    this.render();
+    this._raf = requestAnimationFrame(this._step);
+  }
+  render() {
+    const ctx = this.c.getContext('2d');
+    ctx.clearRect(0, 0, this.c.width, this.c.height);
+    if (!this.data) return;
+    drawScene(ctx, this.c.width, this.c.height, animScene(this.data, this.tl, this._t), { title: this.title });
+  }
 }
 
 /* =========================================================
    PLAYER + INK
    ========================================================= */
-const vid = $('#vid'), ink = $('#ink'), court = $('#court'), frame = $('#frame');
+const vidEl = $('#vid'), ink = $('#ink'), court = $('#court'), frame = $('#frame'), animC = $('#anim');
+let vid = vidEl;   // el vídeo o la animación (ANIM): misma interfaz
+const ANIM = new AnimMedia(animC);
 const COLORS = ['#ffd21f', '#ff3b4f', '#2f6bff', '#ffffff', '#111111'];
 const P = {
   item: null, url: null, strokes: [], cur: null, tool: 'free', color: COLORS[0],
@@ -530,22 +750,35 @@ function openPlayer(it) {
   showItemInfo(it);
   $('#btnEdit').classList.toggle('hidden', it.key === 'board');
   if (P.url) { URL.revokeObjectURL(P.url); P.url = null; }
+  $('#btnAnim').classList.toggle('hidden', !it.play || !!it.video);
   $('#home').classList.add('hidden');
   $('#player').classList.remove('hidden');
-  if (it.video) {
+  ANIM.stop(); vidEl.pause();
+  vid = it.video || !it.anim ? vidEl : ANIM;
+  if (it.anim && !it.video) {
+    P.ar = 3 / 4;
+    vidEl.removeAttribute('src'); vidEl.load();
+    $('#gVideo').classList.remove('hidden');
+    layout();
+    ANIM.load(it.anim, it.name);
+    ANIM.playbackRate = P.speeds[P.speedIdx];
+    ANIM.loop = $('#bLoop').classList.contains('on');
+    setCourt(false);
+    ANIM.play();
+  } else if (it.video) {
     P.ar = it.video.w && it.video.h ? it.video.w / it.video.h : 3 / 4;
     P.url = URL.createObjectURL(it.video.blob);
     vid.src = P.url;
     vid.playbackRate = P.speeds[P.speedIdx];
     vid.loop = $('#bLoop').classList.contains('on');
     setCourt(false);
-    $('#gVideo').classList.remove('hidden');
+    $('.bar').classList.remove('hidden');
     vid.play().catch(() => {});
   } else {
     P.ar = 3 / 4;
     vid.removeAttribute('src'); vid.load();
     setCourt(true);
-    $('#gVideo').classList.add('hidden');
+    $('.bar').classList.add('hidden');
   }
   layout();
   showHint();
@@ -553,41 +786,51 @@ function openPlayer(it) {
 }
 function showItemInfo(it) {
   $('#ptitle').textContent = it.name;
-  $('#pfam').textContent = it.famName + (it.video ? '' : ' · sin vídeo');
+  $('#pfam').textContent = it.famName + (it.video ? '' : it.anim ? ' · animada' : ' · sin vídeo');
   const d = it.desc || (it.play ? it.play.descripcion : '');
   $('#pdesc').textContent = d || 'Sin explicación (pulsa ✎ para escribirla).';
   $('#pdesc').classList.toggle('none', !d);
 }
 function closePlayer() {
-  vid.pause(); vid.removeAttribute('src'); vid.load();
+  vidEl.pause(); vidEl.removeAttribute('src'); vidEl.load(); ANIM.stop(); vid = vidEl;
   if (P.url) { URL.revokeObjectURL(P.url); P.url = null; }
   $('#player').classList.add('hidden');
   $('#home').classList.remove('hidden');
 }
 function setCourt(on) {
   P.showCourt = on;
-  vid.style.visibility = on ? 'hidden' : 'visible';
+  vidEl.style.visibility = animC.style.visibility = on ? 'hidden' : 'visible';
   $('#bCourt').classList.toggle('on', on);
   if (on) vid.pause();
 }
 
+// encaja el marco 3:4 en su escenario; la barra inferior se deja fuera si cabe sin encoger mucho (o siempre, con force)
+function fitStage(stage, fr, ar, top, bar, force) {
+  stage.style.paddingTop = top + 'px';
+  const st = stage.getBoundingClientRect();
+  const pad = 4, fit = (aw, ah) => Math.min(aw, ah * ar);
+  const bh = bar && !bar.classList.contains('hidden') ? bar.offsetHeight + 16 : 0;
+  const ah = st.height - top - pad * 2;
+  let w = fit(st.width - pad * 2, ah);
+  const wBar = fit(st.width - pad * 2, ah - bh);
+  const reserve = bh > 0 && (force || wBar >= w * 0.9);
+  if (reserve) w = wBar;
+  stage.style.paddingBottom = reserve ? bh + 'px' : '0';
+  const h = w / ar;
+  fr.style.width = w + 'px'; fr.style.height = h + 'px';
+  return [w, h];
+}
+function sizeCanvas(c, w, h) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+}
 function layout() {
   if ($('#player').classList.contains('hidden')) return;
-  const stage = $('#stage'), st = stage.getBoundingClientRect();
-  const pad = 4, fit = (aw, ah) => Math.min(aw, ah * P.ar);
-  // si cabe debajo la barra de vídeo sin encoger mucho el vídeo, se deja hueco; si no, la barra va encima
-  const bar = $('#gVideo').classList.contains('hidden') ? 0 : $('#gVideo').offsetHeight + 16;
-  let w = fit(st.width - pad * 2, st.height - pad * 2);
-  const wBar = fit(st.width - pad * 2, st.height - bar - pad * 2);
-  const reserve = bar > 0 && wBar >= w * 0.9;
-  if (reserve) w = wBar;
-  stage.style.paddingBottom = reserve ? bar + 'px' : '0';
-  const h = w / P.ar;
-  frame.style.width = w + 'px'; frame.style.height = h + 'px';
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  for (const c of [ink, court]) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const [w, h] = fitStage($('#stage'), frame, P.ar, 0, $('#gVideo'), false);
+  for (const c of [ink, court, animC]) sizeCanvas(c, w, h);
   drawCourt(court.getContext('2d'), court.width, court.height);
   redraw();
+  ANIM.render();
 }
 
 /* ---- ink rendering ---- */
@@ -598,7 +841,7 @@ function redraw() {
   if (P.cur) drawStroke(ctx, P.cur);
 }
 function drawStroke(ctx, s) {
-  const W = ink.width, H = ink.height;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
   const pts = s.pts.map(p => [p[0] * W, p[1] * H]);
   if (!pts.length) return;
   const lw = Math.max(2, W * 0.009);
@@ -724,7 +967,7 @@ ink.addEventListener('pointercancel', endStroke);
 /* ---- video controls ---- */
 function fmt(t) { t = Math.max(0, t || 0); return Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0'); }
 function togglePlay() {
-  if (!P.item || !P.item.video) return;
+  if (!P.item || !hasMedia(P.item)) return;
   if (P.showCourt) setCourt(false);
   if (vid.paused) { if (vid.ended) vid.currentTime = 0; vid.play().catch(() => {}); } else vid.pause();
 }
@@ -736,10 +979,12 @@ function syncUI() {
 }
 let scrubbing = false, rafId = 0;
 function tick() { syncUI(); if (!vid.paused) rafId = requestAnimationFrame(tick); }
-vid.addEventListener('play', () => { cancelAnimationFrame(rafId); tick(); });
-['pause', 'loadedmetadata', 'seeked', 'ended'].forEach(ev => vid.addEventListener(ev, syncUI));
-vid.addEventListener('loadedmetadata', () => {
-  if (vid.videoWidth && vid.videoHeight) { const ar = vid.videoWidth / vid.videoHeight; if (Math.abs(ar - P.ar) > 0.01) { P.ar = ar; layout(); } }
+for (const m of [vidEl, ANIM]) {
+  m.addEventListener('play', () => { if (m === vid) { cancelAnimationFrame(rafId); tick(); } });
+  ['pause', 'loadedmetadata', 'seeked', 'ended'].forEach(ev => m.addEventListener(ev, () => { if (m === vid) syncUI(); }));
+}
+vidEl.addEventListener('loadedmetadata', () => {
+  if (vidEl.videoWidth && vidEl.videoHeight) { const ar = vidEl.videoWidth / vidEl.videoHeight; if (Math.abs(ar - P.ar) > 0.01) { P.ar = ar; layout(); } }
 });
 $('#scrub').addEventListener('input', e => {
   scrubbing = true; vid.pause();
@@ -954,7 +1199,7 @@ function renderEditTags() {
 }
 function openEdit(it, onSave) {
   const p = it.play;
-  EDIT = { video: it.video, play: p, tags: new Set(p ? p.etiquetas || [] : []), onSave };
+  EDIT = { video: it.video, play: p, anim: it.anim || null, tags: new Set(p ? p.etiquetas || [] : []), onSave };
   $('#eName').value = it.name;
   $('#eFam').innerHTML = famOptions(p ? p.familia : '');
   $('#eNewFam').value = ''; $('#eNewFamWrap').classList.add('hidden');
@@ -962,7 +1207,7 @@ function openEdit(it, onSave) {
   $('#eDesc').value = p ? p.descripcion || '' : '';
   $('#eInfo').textContent = it.video
     ? 'Vídeo: ' + it.video.fileName + (p ? '' : ' · Al guardar se añade al catálogo como jugada nueva.')
-    : '';
+    : (it.anim && !p ? 'Jugada animada nueva: al guardar se añade al catálogo.' : '');
   renderEditTags();
   $('#edit').classList.remove('hidden');
 }
@@ -987,6 +1232,7 @@ async function saveEdit() {
     nombre: name, familia: fam, alias: splitList($('#eAlias').value),
     etiquetas: [...EDIT.tags].filter(t => t !== fam), descripcion: $('#eDesc').value.trim()
   });
+  if (EDIT.anim) play.animacion = EDIT.anim;
   cat.editado = new Date().toISOString();
   await DB.setkv('catalog', cat); buildLookup();
   for (const v of vids) {
@@ -1015,6 +1261,174 @@ $('#btnEdit').onclick = () => openEdit(P.item, play => {
   P.item = P.item.video ? videoItem(P.item.video) : playItem(play);
   showItemInfo(P.item);
 });
+
+/* =========================================================
+   EDITOR DE JUGADAS ANIMADAS
+   Inicio: colocar jugadores y dar el balón. Cada paso: arrastrar recorridos + un pase (dos toques).
+   Solo se modifica el último paso (o el inicio si aún no hay pasos).
+   ========================================================= */
+const aCourt = $('#aCourt'), aScene = $('#aScene');
+const AE = { anim: null, playId: null, sel: 0, undo: [], drag: null, armed: false, msg: '', msgT: 0 };
+const AEM = new AnimMedia(aScene);   // vista previa
+function openAnimEditor(play) {
+  AE.anim = play && play.animacion ? JSON.parse(JSON.stringify(play.animacion)) : newAnim();
+  AE.playId = play ? play.id : null;
+  AE.sel = AE.anim.steps.length; AE.undo = []; AE.armed = false; AE.msg = '';
+  $('#aTitle').textContent = play ? play.nombre : 'Nueva jugada';
+  if (!$('#player').classList.contains('hidden')) vid.pause();
+  $('#animEd').classList.remove('hidden');
+  aeLayout();
+}
+function closeAnimEditor() { AEM.stop(); $('#animEd').classList.add('hidden'); AE.anim = null; }
+function aeLayout() {
+  if ($('#animEd').classList.contains('hidden')) return;
+  const [w, h] = fitStage($('#aStage'), $('#aFrame'), 3 / 4, $('#aTop').offsetHeight + 8, $('#aBar'), true);
+  sizeCanvas(aCourt, w, h); sizeCanvas(aScene, w, h);
+  drawCourt(aCourt.getContext('2d'), aCourt.width, aCourt.height);
+  aeRender();
+}
+const aeEditable = () => AE.sel === AE.anim.steps.length;
+function aeView() {
+  const st = animStates(AE.anim);
+  if (AE.sel === 0) return { st, pos: st[0].pos, ball: st[0].ball, trails: [], ghosts: null };
+  const k = AE.sel - 1, s = AE.anim.steps[k], end = st[k + 1], ghosts = {};
+  const trails = Object.entries(s.moves).map(([id, pts]) => { ghosts[id] = st[k].pos[id]; return { tool: 'move', color: TRAIL, pts }; });
+  if (s.pass) trails.push({ tool: 'pass', color: TRAIL, pts: [end.pos[st[k].ball], end.pos[s.pass.to]] });
+  return { st, pos: end.pos, ball: end.ball, trails, ghosts, holder: st[k].ball };
+}
+function aeHint() {
+  if (AE.msg) return AE.msg;
+  if (!AEM.paused) return 'Reproduciendo… toca la pista para parar.';
+  const n = AE.anim.steps.length;
+  if (!aeEditable()) return `Viendo el paso ${AE.sel}. Solo se cambia el último: para modificar este, borra los posteriores.`;
+  if (AE.sel === 0) return 'Arrastra a los jugadores a su sitio y toca a uno para darle el balón. Luego pulsa ＋ Paso.';
+  if (AE.armed) return 'Ahora toca al jugador que recibe el pase (o al que tiene el balón para cancelar).';
+  return `Paso ${n}: arrastra a cada jugador por donde corre. Pase: toca al que tiene el balón y luego al receptor.`;
+}
+function aeFlash(m) { AE.msg = m; clearTimeout(AE.msgT); AE.msgT = setTimeout(() => { AE.msg = ''; aeRender(); }, 2600); aeRender(); }
+function aeRender() {
+  if (!AE.anim) return;
+  const n = AE.anim.steps.length;
+  $('#aSteps').innerHTML = ['Inicio', ...AE.anim.steps.map((_, i) => String(i + 1))]
+    .map((l, i) => `<button class="chip ${AE.sel === i ? 'on' : ''}" data-s="${i}">${l}</button>`).join('');
+  $('#aHint').textContent = aeHint();
+  $('#aPlay').textContent = AEM.paused ? '▶︎' : '■';
+  $('#aDel').disabled = !n; $('#aUndo').disabled = !AE.undo.length;
+  if (!AEM.paused) return;   // la vista previa pinta sola
+  const v = aeView(), ctx = aScene.getContext('2d'), W = aScene.width, H = aScene.height;
+  ctx.clearRect(0, 0, W, H);
+  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]) },
+    { trails: v.trails, ghosts: v.ghosts, hl: AE.armed ? v.holder : null });
+}
+function aeSnap() { AE.undo.push(JSON.stringify(AE.anim)); if (AE.undo.length > 100) AE.undo.shift(); }
+function aePt(e) {
+  const r = aScene.getBoundingClientRect();
+  return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))];
+}
+function aeHit(p, pos) {
+  const W = aScene.clientWidth, H = aScene.clientHeight, lim = W * 0.03 * 1.7;
+  let best = null, bd = Infinity;
+  for (const id of ATT) { const d = Math.hypot((pos[id][0] - p[0]) * W, (pos[id][1] - p[1]) * H); if (d < lim && d < bd) { bd = d; best = id; } }
+  return best;
+}
+aScene.addEventListener('pointerdown', e => {
+  if (!AEM.paused) { AEM.pause(); return; }
+  if (AE.drag) return;
+  if (!aeEditable()) { aeFlash('Solo se puede cambiar el último paso. Borra los posteriores (🗑) para modificar este.'); return; }
+  const p = aePt(e), v = aeView(), id = aeHit(p, v.pos);
+  if (!id) return;
+  e.preventDefault();
+  aScene.setPointerCapture(e.pointerId);
+  AE.drag = { id, pid: e.pointerId, p0: p, off: [v.pos[id][0] - p[0], v.pos[id][1] - p[1]], moved: false, snap: JSON.stringify(AE.anim) };
+});
+aScene.addEventListener('pointermove', e => {
+  const d = AE.drag; if (!d || e.pointerId !== d.pid) return;
+  e.preventDefault();
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ev of (evs.length ? evs : [e])) {
+    const p = aePt(ev);
+    if (!d.moved && Math.hypot((p[0] - d.p0[0]) * aScene.clientWidth, (p[1] - d.p0[1]) * aScene.clientHeight) < 8) continue;
+    d.moved = true;
+    const q = [r4(Math.min(1, Math.max(0, p[0] + d.off[0]))), r4(Math.min(1, Math.max(0, p[1] + d.off[1])))];
+    if (AE.sel === 0) { AE.anim.pos[d.id] = q; continue; }
+    const step = AE.anim.steps[AE.sel - 1];
+    if (!step.moves[d.id]) step.moves[d.id] = [animStates(AE.anim)[AE.sel - 1].pos[d.id].slice()];
+    const path = step.moves[d.id], last = path[path.length - 1];
+    if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.004) path.push(q);
+  }
+  aeRender();
+});
+function aeUp(e) {
+  const d = AE.drag; if (!d || e.pointerId !== d.pid) return;
+  AE.drag = null;
+  if (d.moved) { AE.undo.push(d.snap); aeRender(); return; }
+  if (e.type === 'pointerup') aeTap(d.id);
+}
+aScene.addEventListener('pointerup', aeUp);
+aScene.addEventListener('pointercancel', aeUp);
+['touchstart', 'touchmove'].forEach(t => aScene.addEventListener(t, e => e.preventDefault(), { passive: false }));
+function aeTap(id) {
+  if (AE.sel === 0) {
+    if (AE.anim.ball !== id) { aeSnap(); AE.anim.ball = id; }
+    aeRender(); return;
+  }
+  const step = AE.anim.steps[AE.sel - 1], holder = animStates(AE.anim)[AE.sel - 1].ball;
+  if (AE.armed) {
+    AE.armed = false;
+    if (id !== holder) { aeSnap(); step.pass = { to: id }; }
+    aeRender(); return;
+  }
+  if (id === holder) { AE.armed = true; aeRender(); }
+  else aeFlash(`El balón lo tiene ${holder}: tócalo primero y luego al receptor.`);
+}
+$('#aSteps').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  AEM.pause(); AE.sel = +b.dataset.s; AE.armed = false; aeRender();
+});
+$('#aAdd').onclick = () => {
+  AEM.pause(); aeSnap();
+  AE.anim.steps.push({ moves: {}, pass: null });
+  AE.sel = AE.anim.steps.length; AE.armed = false; aeRender();
+  const sc = $('#aSteps'); sc.scrollLeft = sc.scrollWidth;
+};
+$('#aDel').onclick = () => {
+  const n = AE.anim.steps.length; if (!n) return;
+  const s = AE.anim.steps[n - 1];
+  if ((Object.keys(s.moves).length || s.pass) && !confirm('¿Borrar el paso ' + n + '?')) return;
+  AEM.pause(); aeSnap(); AE.anim.steps.pop();
+  AE.sel = Math.min(AE.sel, AE.anim.steps.length); AE.armed = false; aeRender();
+};
+$('#aUndo').onclick = () => {
+  if (!AE.undo.length) return;
+  AEM.pause(); AE.anim = JSON.parse(AE.undo.pop());
+  AE.sel = Math.min(AE.sel, AE.anim.steps.length); AE.armed = false; aeRender();
+};
+$('#aPlay').onclick = () => {
+  if (!AEM.paused) { AEM.pause(); return; }
+  AE.armed = false;
+  AEM.load(AE.anim, ''); AEM.loop = false; AEM.playbackRate = 1; AEM.play(); aeRender();
+};
+AEM.addEventListener('pause', () => { AEM.data = null; aeRender(); });
+$('#aCancel').onclick = () => {
+  if (AE.undo.length && !confirm('¿Salir sin guardar la animación?')) return;
+  closeAnimEditor();
+};
+$('#aSave').onclick = async () => {
+  AEM.pause();
+  const anim = AE.anim, play = AE.playId && PLAYS.get(AE.playId);
+  if (play) {
+    play.animacion = anim;
+    const cat = ensureCatalog(); cat.editado = new Date().toISOString();
+    await DB.setkv('catalog', cat); buildLookup();
+    closeAnimEditor(); renderHome();
+    openPlayer(playItem(PLAYS.get(play.id)));
+    return;
+  }
+  // jugada nueva: se rellena la ficha (nombre, familia…) y se guarda en el catálogo
+  openEdit({ name: '', video: null, play: null, anim }, saved => { closeAnimEditor(); openPlayer(playItem(saved)); });
+};
+$('#btnNew').onclick = () => openAnimEditor(null);
+$('#btnAnim').onclick = () => { if (P.item && P.item.play) openAnimEditor(P.item.play); };
 
 async function exportCatalog() {
   if (!S.catalog) { alert('Todavía no hay catálogo.'); return; }
@@ -1072,8 +1486,8 @@ window.addEventListener('scroll', resetScroll);
 if (window.visualViewport) visualViewport.addEventListener('resize', resetScroll);
 document.addEventListener('focusout', () => setTimeout(resetScroll, 100));
 document.addEventListener('gesturestart', e => e.preventDefault());   // sin zoom con pellizco
-window.addEventListener('resize', () => { resetScroll(); layout(); });
-window.addEventListener('orientationchange', () => setTimeout(() => { resetScroll(); layout(); }, 250));
+window.addEventListener('resize', () => { resetScroll(); layout(); aeLayout(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { resetScroll(); layout(); aeLayout(); }, 250));
 
 (async function init() {
   try {
