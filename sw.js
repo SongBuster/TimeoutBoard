@@ -1,6 +1,6 @@
 // Service worker: guarda la app para que funcione sin conexión.
 // Los vídeos NO pasan por aquí: viven en IndexedDB dentro del iPad.
-const CACHE = 'timeoutboard-v1.3.0';
+const CACHE = 'timeoutboard-v1.4.0';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -124,7 +124,8 @@ header.top h1 span{color:var(--accent)}
 /* ---------- EDITOR DE JUGADAS ---------- */
 #animEd{position:fixed;inset:0;background:#071015;z-index:15}
 #aHint{font-size:13px;color:var(--muted);line-height:1.3;white-space:normal;margin-top:2px}
-#aTop .pill{max-width:calc(100% - 190px)}
+#aTop .pill{max-width:calc(100% - 290px)}
+#rec{z-index:40}
 #aSteps{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-left:2px}
 #aSteps::-webkit-scrollbar{display:none}
 #aSteps .chip{height:50px;min-width:50px;padding:0 14px;border-radius:12px}
@@ -197,6 +198,7 @@ header.top h1 span{color:var(--accent)}
     <div class="sp"></div>
     <button class="iconbtn on" id="btnDraw" title="Mostrar u ocultar las herramientas de dibujo">✏️</button>
     <button class="iconbtn" id="btnInfo" title="Explicación">ℹ︎</button>
+    <button class="iconbtn" id="btnVid" title="Exportar la animación como vídeo">📤</button>
     <button class="iconbtn" id="btnAnim" title="Crear o editar la animación">🎬</button>
     <button class="iconbtn" id="btnEdit" title="Editar la ficha de la jugada">✎</button>
   </div>
@@ -237,14 +239,27 @@ header.top h1 span{color:var(--accent)}
     <button class="iconbtn" id="aCancel" title="Salir sin guardar">✕</button>
     <div class="ov pill"><div id="aTitle">Nueva jugada</div><div id="aHint"></div></div>
     <div class="sp"></div>
+    <button class="iconbtn" id="aDef" title="Defensa: sin, 6:0 o 5:1">🛡 Sin</button>
     <button class="iconbtn save" id="aSave">Guardar</button>
   </div>
   <div id="aBar" class="ov bar">
     <div id="aSteps"></div>
     <button class="tb" id="aAdd" title="Añadir un paso">＋ Paso</button>
     <button class="tb" id="aUndo" title="Deshacer">↶</button>
-    <button class="tb" id="aDel" title="Borrar el último paso">🗑</button>
+    <button class="tb" id="aDel" title="Borrar este paso">🗑</button>
     <button class="tb play" id="aPlay" title="Ver la animación">▶︎</button>
+  </div>
+</section>
+
+<!-- ================= EXPORTAR VÍDEO ================= -->
+<section id="rec" class="modal hidden">
+  <div class="box" style="width:min(460px,100%)">
+    <div class="mh"><h2>Exportar vídeo</h2><button class="iconbtn" id="recClose">Cerrar</button></div>
+    <div class="mb" style="align-items:center">
+      <canvas id="recCanvas" width="1080" height="1440" style="width:min(270px,100%);aspect-ratio:3/4;border-radius:8px"></canvas>
+      <div id="recMsg" class="note" style="text-align:center"></div>
+      <button class="bigbtn hidden" id="recShare">Compartir / guardar vídeo</button>
+    </div>
   </div>
 </section>
 
@@ -293,7 +308,7 @@ header.top h1 span{color:var(--accent)}
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 /* =========================================================
    IndexedDB
@@ -559,6 +574,11 @@ function renderHome() {
    Coordenadas 0–1 sobre el marco 3:4, igual que los trazos.
    ========================================================= */
 const ATT = ['EI', 'LI', 'CT', 'LD', 'ED', 'PI'];
+const isDef = id => id[0] === 'X';   // defensores: X1…X6, con su etiqueta en anim.labels
+const DEF_SETS = {
+  '6:0': [['EXT', 0.70, 0.19], ['2', 0.57, 0.31], ['3', 0.515, 0.43], ['3', 0.515, 0.57], ['2', 0.57, 0.69], ['EXT', 0.70, 0.81]],
+  '5:1': [['EXT', 0.70, 0.19], ['2', 0.575, 0.32], ['3', 0.53, 0.50], ['2', 0.575, 0.68], ['EXT', 0.70, 0.81], ['AV', 0.475, 0.50]]
+};
 const DEFAULT_POS = { EI: [0.80, 0.135], LI: [0.48, 0.17], CT: [0.40, 0.50], LD: [0.48, 0.83], ED: [0.80, 0.865], PI: [0.61, 0.50] };
 const A_HOLD0 = 1, A_GAP = 0.25, A_HOLD_END = 1.5, A_STEP_MIN = 1, A_SPEED = 0.22, A_BALL_SPEED = 0.7;
 const BALL_OFF = [0.04, 0.035];
@@ -571,14 +591,30 @@ const ballXY = p => [p[0] + BALL_OFF[0], p[1] + BALL_OFF[1]];
 function newAnim() { return { v: 1, pos: clonePos(DEFAULT_POS), ball: 'CT', steps: [] }; }
 
 // estado (posiciones y quién tiene el balón) al empezar cada paso, más el final
+// un pase solo vale si va a otro atacante (al editar pasos anteriores puede quedar apuntando al que ya tiene el balón)
+const validPass = (s, holder) => s.pass && s.pass.to !== holder && !isDef(s.pass.to) ? s.pass : null;
 function animStates(a) {
   const st = [{ pos: clonePos(a.pos), ball: a.ball }];
   for (const s of a.steps) {
-    const prev = st[st.length - 1], pos = clonePos(prev.pos);
+    const prev = st[st.length - 1], pos = clonePos(prev.pos), ps = validPass(s, prev.ball);
     for (const id in s.moves) { const p = s.moves[id]; pos[id] = p[p.length - 1].slice(); }
-    st.push({ pos, ball: s.pass ? s.pass.to : prev.ball });
+    st.push({ pos, ball: ps ? ps.to : prev.ball });
   }
   return st;
+}
+// el siguiente recorrido de id después del paso k (-1 = inicio) pasa a salir de p, manteniendo su destino
+function reanchor(a, k, id, p) {
+  for (let j = k + 1; j < a.steps.length; j++) {
+    const path = a.steps[j].moves[id];
+    if (!path) continue;
+    const dx = p[0] - path[0][0], dy = p[1] - path[0][1];
+    if (!dx && !dy) return;
+    const cum = [0];
+    for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + adist(path[i - 1], path[i]));
+    const L = cum[cum.length - 1];
+    path.forEach((q, i) => { const w = L ? 1 - cum[i] / L : 1; q[0] = r4(q[0] + dx * w); q[1] = r4(q[1] + dy * w); });
+    return;
+  }
 }
 function animTimeline(a) {
   const states = animStates(a), steps = [];
@@ -593,8 +629,9 @@ function animTimeline(a) {
       maxLen = Math.max(maxLen, paths[id].len);
     }
     let dur = Math.max(A_STEP_MIN, maxLen / A_SPEED), flight = 0;
-    if (s.pass) { flight = Math.max(0.5, adist(start.pos[start.ball], end.pos[s.pass.to]) / A_BALL_SPEED); dur = Math.max(dur, flight); }
-    steps.push({ t0: t, dur, paths, flight, start, end, pass: s.pass ? { from: start.ball, to: s.pass.to } : null });
+    const ps = validPass(s, start.ball);
+    if (ps) { flight = Math.max(0.5, adist(start.pos[start.ball], end.pos[ps.to]) / A_BALL_SPEED); dur = Math.max(dur, flight); }
+    steps.push({ t0: t, dur, paths, flight, start, end, pass: ps ? { from: start.ball, to: ps.to } : null });
     t += dur + A_GAP;
   });
   return { states, steps, total: t + A_HOLD_END };
@@ -612,9 +649,10 @@ function pointAt(path, d) {
 function animScene(a, tl, t) {
   let sp = null, idx = -1;
   tl.steps.forEach((x, i) => { if (t >= x.t0) { sp = x; idx = i; } });
-  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]) }; }
+  const labels = a.labels || {};
+  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels }; }
   const lt = t - sp.t0;
-  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]) }; }
+  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels }; }
   const e = ease(lt / sp.dur), pos = clonePos(sp.start.pos);
   for (const id in sp.paths) pos[id] = pointAt(sp.paths[id], e * sp.paths[id].len);
   let ball = ballXY(pos[sp.start.ball]);
@@ -625,20 +663,21 @@ function animScene(a, tl, t) {
       ball = [a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f];
     }
   }
-  return { pos, ball };
+  return { pos, ball, labels };
 }
 
 /* ---- dibujo de jugadores y balón (estilo de los vídeos) ---- */
-function drawToken(ctx, x, y, r, label, hl) {
+function drawToken(ctx, x, y, r, label, hl, def) {
   ctx.save();
   if (hl) { ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,210,31,.55)'; ctx.fill(); }
   ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = r * 0.4; ctx.shadowOffsetY = r * 0.12;
   const g = ctx.createLinearGradient(x, y - r, x, y + r);
-  g.addColorStop(0, '#7aa5ff'); g.addColorStop(1, '#2556e0');
+  if (def) { g.addColorStop(0, '#f06a7f'); g.addColorStop(1, '#c0142f'); }
+  else { g.addColorStop(0, '#7aa5ff'); g.addColorStop(1, '#2556e0'); }
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
   ctx.shadowColor = 'transparent';
   ctx.lineWidth = r * 0.14; ctx.strokeStyle = '#fff'; ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.font = `700 ${r * 0.78}px -apple-system, Helvetica, Arial, sans-serif`;
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${r * (label.length > 2 ? 0.6 : 0.78)}px -apple-system, Helvetica, Arial, sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x, y + r * 0.05);
   ctx.restore();
 }
@@ -664,8 +703,10 @@ function drawBall(ctx, x, y, r) {
 function drawScene(ctx, W, H, scene, opts = {}) {
   const r = W * 0.03;
   for (const t of opts.trails || []) drawStroke(ctx, t);
-  if (opts.ghosts) { ctx.save(); ctx.globalAlpha = 0.3; for (const id in opts.ghosts) drawToken(ctx, opts.ghosts[id][0] * W, opts.ghosts[id][1] * H, r, id); ctx.restore(); }
-  for (const id of ATT) if (scene.pos[id]) drawToken(ctx, scene.pos[id][0] * W, scene.pos[id][1] * H, r, id, opts.hl === id);
+  const labels = scene.labels || {}, tok = (id, p, hl) => drawToken(ctx, p[0] * W, p[1] * H, r, labels[id] || id, hl, isDef(id));
+  if (opts.ghosts) { ctx.save(); ctx.globalAlpha = 0.3; for (const id in opts.ghosts) tok(id, opts.ghosts[id]); ctx.restore(); }
+  for (const id in scene.pos) if (isDef(id)) tok(id, scene.pos[id], opts.hl === id);   // defensa debajo, ataque encima
+  for (const id of ATT) if (scene.pos[id]) tok(id, scene.pos[id], opts.hl === id);
   if (scene.ball) drawBall(ctx, scene.ball[0] * W, scene.ball[1] * H, r * 0.62);
   if (opts.title) {
     ctx.save(); ctx.fillStyle = '#0b1a20'; ctx.font = `500 ${W * 0.028}px -apple-system, Helvetica, Arial, sans-serif`;
@@ -751,6 +792,7 @@ function openPlayer(it) {
   $('#btnEdit').classList.toggle('hidden', it.key === 'board');
   if (P.url) { URL.revokeObjectURL(P.url); P.url = null; }
   $('#btnAnim').classList.toggle('hidden', !it.play || !!it.video);
+  $('#btnVid').classList.toggle('hidden', !it.anim || !!it.video);
   $('#home').classList.add('hidden');
   $('#player').classList.remove('hidden');
   ANIM.stop(); vidEl.pause();
@@ -1287,23 +1329,21 @@ function aeLayout() {
   drawCourt(aCourt.getContext('2d'), aCourt.width, aCourt.height);
   aeRender();
 }
-const aeEditable = () => AE.sel === AE.anim.steps.length;
 function aeView() {
   const st = animStates(AE.anim);
   if (AE.sel === 0) return { st, pos: st[0].pos, ball: st[0].ball, trails: [], ghosts: null };
   const k = AE.sel - 1, s = AE.anim.steps[k], end = st[k + 1], ghosts = {};
   const trails = Object.entries(s.moves).map(([id, pts]) => { ghosts[id] = st[k].pos[id]; return { tool: 'move', color: TRAIL, pts }; });
-  if (s.pass) trails.push({ tool: 'pass', color: TRAIL, pts: [end.pos[st[k].ball], end.pos[s.pass.to]] });
+  const ps = validPass(s, st[k].ball);
+  if (ps) trails.push({ tool: 'pass', color: TRAIL, pts: [end.pos[st[k].ball], end.pos[ps.to]] });
   return { st, pos: end.pos, ball: end.ball, trails, ghosts, holder: st[k].ball };
 }
 function aeHint() {
   if (AE.msg) return AE.msg;
   if (!AEM.paused) return 'Reproduciendo… toca la pista para parar.';
-  const n = AE.anim.steps.length;
-  if (!aeEditable()) return `Viendo el paso ${AE.sel}. Solo se cambia el último: para modificar este, borra los posteriores.`;
-  if (AE.sel === 0) return 'Arrastra a los jugadores a su sitio y toca a uno para darle el balón. Luego pulsa ＋ Paso.';
-  if (AE.armed) return 'Ahora toca al jugador que recibe el pase (o al que tiene el balón para cancelar).';
-  return `Paso ${n}: arrastra a cada jugador por donde corre. Pase: toca al que tiene el balón y luego al receptor.`;
+  if (AE.sel === 0) return 'Arrastra a los jugadores a su sitio y toca a un atacante para darle el balón. Luego pulsa ＋ Paso.';
+  if (AE.armed) return 'Ahora toca al atacante que recibe el pase (o al que tiene el balón para cancelar).';
+  return `Paso ${AE.sel}: arrastra a cada jugador por donde corre. Pase: toca al que tiene el balón y luego al receptor.`;
 }
 function aeFlash(m) { AE.msg = m; clearTimeout(AE.msgT); AE.msgT = setTimeout(() => { AE.msg = ''; aeRender(); }, 2600); aeRender(); }
 function aeRender() {
@@ -1313,11 +1353,12 @@ function aeRender() {
     .map((l, i) => `<button class="chip ${AE.sel === i ? 'on' : ''}" data-s="${i}">${l}</button>`).join('');
   $('#aHint').textContent = aeHint();
   $('#aPlay').textContent = AEM.paused ? '▶︎' : '■';
-  $('#aDel').disabled = !n; $('#aUndo').disabled = !AE.undo.length;
+  $('#aDel').disabled = AE.sel === 0; $('#aUndo').disabled = !AE.undo.length;
+  $('#aDef').textContent = '🛡 ' + (AE.anim.def || 'Sin');
   if (!AEM.paused) return;   // la vista previa pinta sola
   const v = aeView(), ctx = aScene.getContext('2d'), W = aScene.width, H = aScene.height;
   ctx.clearRect(0, 0, W, H);
-  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]) },
+  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]), labels: AE.anim.labels },
     { trails: v.trails, ghosts: v.ghosts, hl: AE.armed ? v.holder : null });
 }
 function aeSnap() { AE.undo.push(JSON.stringify(AE.anim)); if (AE.undo.length > 100) AE.undo.shift(); }
@@ -1328,13 +1369,12 @@ function aePt(e) {
 function aeHit(p, pos) {
   const W = aScene.clientWidth, H = aScene.clientHeight, lim = W * 0.03 * 1.7;
   let best = null, bd = Infinity;
-  for (const id of ATT) { const d = Math.hypot((pos[id][0] - p[0]) * W, (pos[id][1] - p[1]) * H); if (d < lim && d < bd) { bd = d; best = id; } }
+  for (const id in pos) { const d = Math.hypot((pos[id][0] - p[0]) * W, (pos[id][1] - p[1]) * H); if (d < lim && d < bd) { bd = d; best = id; } }
   return best;
 }
 aScene.addEventListener('pointerdown', e => {
   if (!AEM.paused) { AEM.pause(); return; }
   if (AE.drag) return;
-  if (!aeEditable()) { aeFlash('Solo se puede cambiar el último paso. Borra los posteriores (🗑) para modificar este.'); return; }
   const p = aePt(e), v = aeView(), id = aeHit(p, v.pos);
   if (!id) return;
   e.preventDefault();
@@ -1350,11 +1390,11 @@ aScene.addEventListener('pointermove', e => {
     if (!d.moved && Math.hypot((p[0] - d.p0[0]) * aScene.clientWidth, (p[1] - d.p0[1]) * aScene.clientHeight) < 8) continue;
     d.moved = true;
     const q = [r4(Math.min(1, Math.max(0, p[0] + d.off[0]))), r4(Math.min(1, Math.max(0, p[1] + d.off[1])))];
-    if (AE.sel === 0) { AE.anim.pos[d.id] = q; continue; }
+    if (AE.sel === 0) { AE.anim.pos[d.id] = q; reanchor(AE.anim, -1, d.id, q); continue; }
     const step = AE.anim.steps[AE.sel - 1];
     if (!step.moves[d.id]) step.moves[d.id] = [animStates(AE.anim)[AE.sel - 1].pos[d.id].slice()];
     const path = step.moves[d.id], last = path[path.length - 1];
-    if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.004) path.push(q);
+    if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.004) { path.push(q); reanchor(AE.anim, AE.sel - 1, d.id, q); }
   }
   aeRender();
 });
@@ -1368,6 +1408,7 @@ aScene.addEventListener('pointerup', aeUp);
 aScene.addEventListener('pointercancel', aeUp);
 ['touchstart', 'touchmove'].forEach(t => aScene.addEventListener(t, e => e.preventDefault(), { passive: false }));
 function aeTap(id) {
+  if (isDef(id)) { aeFlash(AE.sel === 0 ? 'El balón solo lo puede tener un atacante.' : 'Los pases son entre atacantes; a los defensores solo se les mueve.'); AE.armed = false; return; }
   if (AE.sel === 0) {
     if (AE.anim.ball !== id) { aeSnap(); AE.anim.ball = id; }
     aeRender(); return;
@@ -1385,18 +1426,36 @@ $('#aSteps').addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
   AEM.pause(); AE.sel = +b.dataset.s; AE.armed = false; aeRender();
 });
+// ＋ Paso: se inserta detrás del paso seleccionado
 $('#aAdd').onclick = () => {
   AEM.pause(); aeSnap();
-  AE.anim.steps.push({ moves: {}, pass: null });
-  AE.sel = AE.anim.steps.length; AE.armed = false; aeRender();
-  const sc = $('#aSteps'); sc.scrollLeft = sc.scrollWidth;
+  AE.anim.steps.splice(AE.sel, 0, { moves: {}, pass: null });
+  AE.sel++; AE.armed = false; aeRender();
+  const b = $('#aSteps .chip.on'); if (b) b.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 };
+// 🗑 borra el paso seleccionado; los recorridos siguientes pasan a salir de donde estaban antes de él
 $('#aDel').onclick = () => {
-  const n = AE.anim.steps.length; if (!n) return;
-  const s = AE.anim.steps[n - 1];
-  if ((Object.keys(s.moves).length || s.pass) && !confirm('¿Borrar el paso ' + n + '?')) return;
-  AEM.pause(); aeSnap(); AE.anim.steps.pop();
+  if (AE.sel === 0) return;
+  const k = AE.sel - 1, s = AE.anim.steps[k];
+  if ((Object.keys(s.moves).length || s.pass) && !confirm('¿Borrar el paso ' + AE.sel + '?')) return;
+  AEM.pause(); aeSnap();
+  const before = animStates(AE.anim)[k].pos;
+  AE.anim.steps.splice(k, 1);
+  for (const id in s.moves) reanchor(AE.anim, k - 1, id, before[id]);
   AE.sel = Math.min(AE.sel, AE.anim.steps.length); AE.armed = false; aeRender();
+};
+// 🛡 defensa: sin → 6:0 → 5:1
+$('#aDef').onclick = () => {
+  const a = AE.anim, order = [null, '6:0', '5:1'], next = order[(order.indexOf(a.def || null) + 1) % order.length];
+  const moved = a.steps.some(s => Object.keys(s.moves).some(isDef));
+  if (moved && !confirm('Se perderán los movimientos de los defensores. ¿Cambiar la defensa?')) return;
+  AEM.pause(); aeSnap();
+  for (const id of Object.keys(a.pos)) if (isDef(id)) delete a.pos[id];
+  for (const s of a.steps) for (const id of Object.keys(s.moves)) if (isDef(id)) delete s.moves[id];
+  a.labels = {}; a.def = next;
+  if (next) DEF_SETS[next].forEach(([l, x, y], i) => { a.pos['X' + (i + 1)] = [x, y]; a.labels['X' + (i + 1)] = l; });
+  else { delete a.def; delete a.labels; }
+  AE.armed = false; aeRender();
 };
 $('#aUndo').onclick = () => {
   if (!AE.undo.length) return;
@@ -1429,6 +1488,69 @@ $('#aSave').onclick = async () => {
 };
 $('#btnNew').onclick = () => openAnimEditor(null);
 $('#btnAnim').onclick = () => { if (P.item && P.item.play) openAnimEditor(P.item.play); };
+
+/* ---- exportar una animación como vídeo (MP4 en el iPad) ---- */
+const REC = { file: null, cancel: false, busy: false };
+function recMime() {
+  if (!window.MediaRecorder) return null;
+  for (const m of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'])
+    if (MediaRecorder.isTypeSupported(m)) return m;
+  return null;
+}
+async function exportAnimVideo(anim, title) {
+  const c = $('#recCanvas'), mime = recMime();
+  if (!mime || !c.captureStream) { alert('Este navegador no permite grabar vídeo.'); return; }
+  if (REC.busy) return;
+  vid.pause();
+  REC.busy = true; REC.cancel = false; REC.file = null;
+  $('#recShare').classList.add('hidden');
+  $('#rec').classList.remove('hidden');
+  const W = c.width, H = c.height, ctx = c.getContext('2d');
+  const bg = document.createElement('canvas'); bg.width = W; bg.height = H;
+  drawCourt(bg.getContext('2d'), W, H);
+  const tl = animTimeline(anim);
+  const draw = t => { ctx.drawImage(bg, 0, 0); drawScene(ctx, W, H, animScene(anim, tl, t), { title }); };
+  draw(0);
+  const stream = c.captureStream(30), chunks = [];
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6e6 });
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  const stopped = new Promise(r => { rec.onstop = r; });
+  rec.start(250);
+  const t0 = performance.now();
+  // se graba en tiempo real: la animación dura lo que dura el vídeo
+  await new Promise(res => {
+    const f = now => {
+      if (REC.cancel) return res();
+      const t = (now - t0) / 1000;
+      draw(Math.min(t, tl.total));
+      $('#recMsg').textContent = `Grabando… ${fmt(t)} / ${fmt(tl.total)}`;
+      if (t >= tl.total + 0.3) return res();
+      requestAnimationFrame(f);
+    };
+    requestAnimationFrame(f);
+  });
+  rec.stop(); await stopped; stream.getTracks().forEach(t => t.stop());
+  REC.busy = false;
+  if (REC.cancel || !chunks.length) { if (!REC.cancel) $('#recMsg').textContent = 'No se pudo grabar el vídeo.'; return; }
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  const base = String(title || 'jugada').replace(/[\\/:*?"<>|]+/g, '').trim() || 'jugada';
+  REC.file = new File(chunks, base + '.' + ext, { type: mime.split(';')[0] });
+  $('#recMsg').textContent = `Vídeo listo: ${REC.file.name} (${(REC.file.size / 1048576).toFixed(1)} MB).`;
+  $('#recShare').classList.remove('hidden');
+}
+// compartir tiene que salir de un toque (iOS no deja hacerlo al terminar la grabación sin más)
+$('#recShare').onclick = async () => {
+  const f = REC.file; if (!f) return;
+  if (navigator.canShare && navigator.canShare({ files: [f] })) {
+    try { await navigator.share({ files: [f] }); } catch (e) {}
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(f); a.download = f.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+};
+$('#recClose').onclick = () => { REC.cancel = true; $('#rec').classList.add('hidden'); };
+$('#btnVid').onclick = () => { if (P.item && P.item.anim) exportAnimVideo(P.item.anim, P.item.name); };
 
 async function exportCatalog() {
   if (!S.catalog) { alert('Todavía no hay catálogo.'); return; }
