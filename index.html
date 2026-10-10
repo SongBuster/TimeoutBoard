@@ -26,7 +26,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
 /* iOS (app instalada): si el documento llega a desplazarse, los toques se detectan descolocados */
 html,body{position:fixed;inset:0;overflow:hidden}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 button{touch-action:manipulation;cursor:pointer}
 .hidden{display:none!important}
 
@@ -114,14 +114,14 @@ details summary::-webkit-details-marker{display:none}
   #side .body .grp.desc{flex-basis:100%}
 }
 
-/* ---------- MANAGE ---------- */
-#manage{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;
+/* ---------- MANAGE / EDIT (ventanas) ---------- */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;
   padding:calc(var(--sat) + 16px) 16px calc(var(--sab) + 16px)}
-#manage .box{width:min(820px,100%);max-height:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+.modal .box{width:min(820px,100%);max-height:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;
   display:flex;flex-direction:column;overflow:hidden}
-#manage .mh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-#manage .mh h2{margin:0;font-size:20px;flex:1}
-#manage .mb{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.modal .mh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.modal .mh h2{margin:0;font-size:20px;flex:1}
+.modal .mb{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 .stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 .stat div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--muted)}
 .stat b{display:block;color:var(--text);font-size:17px;margin-top:2px}
@@ -133,6 +133,17 @@ details summary::-webkit-details-marker{display:none}
 .vrow input{-webkit-user-select:text;user-select:text}
 .del{height:44px;width:44px;border-radius:10px;border:1px solid #5a2a32;background:#2a1519;color:#ff8a98;font-size:18px}
 .note{font-size:14px;color:var(--muted);line-height:1.5}
+.vrow .acts{display:flex;flex-direction:column;gap:6px}
+.edt{height:44px;width:44px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-size:18px}
+#edit{z-index:30}
+.iconbtn.save{background:var(--accent);border-color:var(--accent);color:#1b1300;font-weight:700}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.fld input,.fld select,.fld textarea{height:46px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0 12px;
+  font-size:17px;text-transform:none;letter-spacing:0;color:var(--text);outline:none;-webkit-user-select:text;user-select:text}
+.fld textarea{height:auto;min-height:150px;padding:10px 12px;line-height:1.45;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--teal)}
+#eTags{text-transform:none;letter-spacing:0}
+#eTags .chip{height:38px;font-size:15px}
 .note b{color:var(--text)}
 </style>
 </head>
@@ -164,6 +175,7 @@ details summary::-webkit-details-marker{display:none}
     <div class="hd">
       <button class="iconbtn" id="btnBack">◀︎ Volver</button>
       <div class="t"><div id="ptitle"></div><div id="pfam"></div></div>
+      <button class="iconbtn" id="btnEdit" title="Editar la ficha de la jugada">✎</button>
     </div>
     <div class="body">
       <div class="grp" id="gVideo">
@@ -208,13 +220,14 @@ details summary::-webkit-details-marker{display:none}
 </section>
 
 <!-- ================= MANAGE ================= -->
-<section id="manage" class="hidden">
+<section id="manage" class="modal hidden">
   <div class="box">
     <div class="mh"><h2>Gestionar jugadas</h2><button class="iconbtn" id="btnCloseManage">Cerrar</button></div>
     <div class="mb">
       <div class="row">
         <button class="bigbtn" id="btnImport">＋ Importar vídeos / catálogo</button>
         <input type="file" id="fileIn" multiple accept="video/*,.mp4,.mov,.m4v,.json,application/json" class="hidden">
+        <button class="bigbtn sec" id="btnExport">⇪ Exportar catálogo</button>
       </div>
       <div id="progress"></div>
       <div class="stat" id="stats"></div>
@@ -232,9 +245,26 @@ details summary::-webkit-details-marker{display:none}
   </div>
 </section>
 
+<!-- ================= EDIT ================= -->
+<section id="edit" class="modal hidden">
+  <div class="box">
+    <div class="mh"><h2>Ficha de la jugada</h2>
+      <button class="iconbtn" id="eCancel">Cancelar</button><button class="iconbtn save" id="eSave">Guardar</button></div>
+    <div class="mb">
+      <label class="fld">Nombre<input id="eName" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+      <label class="fld">Familia<select id="eFam"></select></label>
+      <label class="fld hidden" id="eNewFamWrap">Nombre de la nueva familia<input id="eNewFam" autocomplete="off"></label>
+      <div class="fld">También aparece en<div class="row" id="eTags"></div></div>
+      <label class="fld">Otros nombres para buscarla (separados por comas)<input id="eAlias" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+      <label class="fld">Explicación<textarea id="eDesc"></textarea></label>
+      <div class="note" id="eInfo"></div>
+    </div>
+  </div>
+</section>
+
 <script>
 'use strict';
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.1.0';
 
 /* =========================================================
    IndexedDB
@@ -341,11 +371,12 @@ function allItems() { return S.videos.map(videoItem); }
 function playsWithoutVideo(items) {
   if (!S.catalog) return [];
   const used = new Set(items.filter(i => i.play).map(i => i.play.id));
-  return (S.catalog.jugadas || []).filter(p => !used.has(p.id)).map(p => {
-    const fam = FAMS.get(p.familia);
-    return { key: 'p:' + p.id, video: null, play: p, name: p.nombre, famId: fam ? fam.id : 'otras',
-      famName: fam ? fam.nombre : 'Otras', famOrder: fam ? fam.order : 999, tags: p.etiquetas || [], desc: p.descripcion };
-  });
+  return (S.catalog.jugadas || []).filter(p => !used.has(p.id)).map(playItem);
+}
+function playItem(p) {
+  const fam = FAMS.get(p.familia);
+  return { key: 'p:' + p.id, video: null, play: p, name: p.nombre, famId: fam ? fam.id : 'otras',
+    famName: fam ? fam.nombre : 'Otras', famOrder: fam ? fam.order : 999, tags: p.etiquetas || [], desc: p.descripcion };
 }
 const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
 function sortItems(a) { return a.sort((x, y) => (x.famOrder - y.famOrder) || collator.compare(x.name, y.name)); }
@@ -496,11 +527,8 @@ COLORS.forEach((c, i) => {
 
 function openPlayer(it) {
   P.item = it; P.strokes = []; P.cur = null;
-  $('#ptitle').textContent = it.name;
-  $('#pfam').textContent = it.famName + (it.video ? '' : ' · sin vídeo');
-  const d = it.desc || (it.play ? it.play.descripcion : '');
-  $('#pdesc').textContent = d || 'Sin explicación (importa el catálogo o asigna la jugada en ⚙︎).';
-  $('#pdesc').classList.toggle('none', !d);
+  showItemInfo(it);
+  $('#btnEdit').classList.toggle('hidden', it.key === 'board');
   $('#dDesc').open = !matchMedia('(orientation:portrait)').matches;
   if (P.url) { URL.revokeObjectURL(P.url); P.url = null; }
   $('#home').classList.add('hidden');
@@ -523,6 +551,13 @@ function openPlayer(it) {
   layout();
   showHint();
   requestWake();
+}
+function showItemInfo(it) {
+  $('#ptitle').textContent = it.name;
+  $('#pfam').textContent = it.famName + (it.video ? '' : ' · sin vídeo');
+  const d = it.desc || (it.play ? it.play.descripcion : '');
+  $('#pdesc').textContent = d || 'Sin explicación (pulsa ✎ para escribirla).';
+  $('#pdesc').classList.toggle('none', !d);
 }
 function closePlayer() {
   vid.pause(); vid.removeAttribute('src'); vid.load();
@@ -787,6 +822,7 @@ async function importFiles(files) {
       if (/\.json$/i.test(f.name) || f.type === 'application/json') {
         const data = JSON.parse(await f.text());
         if (!data || !Array.isArray(data.jugadas)) throw new Error('No es un catálogo de jugadas');
+        if (S.catalog && S.catalog.editado && !confirm('El catálogo actual tiene cambios hechos en este iPad. ¿Reemplazarlo por «' + f.name + '»?')) continue;
         S.catalog = data; await DB.setkv('catalog', data); buildLookup(); nc++;
       } else {
         const meta = await makeThumb(f);
@@ -839,7 +875,7 @@ async function renderManage() {
       <div><div class="fn">${esc(v.fileName)} · ${fmt(v.duration)}${it.play && !v.playId ? ' · ✓ ' + esc(it.play.nombre) : ''}</div>
         <select data-k="playId">${playOptions(v.playId || '')}</select>
         <input data-k="customName" placeholder="Nombre a mostrar (opcional)" value="${esc(v.customName || '')}"></div>
-      <button class="del" title="Eliminar">🗑</button></div>`;
+      <div class="acts"><button class="edt" title="Editar la ficha">✎</button><button class="del" title="Eliminar">🗑</button></div></div>`;
   }).join('') : '<div class="note">No hay vídeos.</div>';
   $('#ver').textContent = 'Versión ' + APP_VERSION;
 }
@@ -850,6 +886,11 @@ $('#vlist').addEventListener('change', async e => {
   await DB.put('videos', v); renderHome(); renderManage();
 });
 $('#vlist').addEventListener('click', async e => {
+  if (e.target.closest('.edt')) {
+    const v = S.videos.find(x => x.id === e.target.closest('.vrow').dataset.id);
+    if (v) openEdit(videoItem(v));
+    return;
+  }
   if (!e.target.closest('.del')) return;
   const row = e.target.closest('.vrow'); const id = row.dataset.id;
   if (!confirm('¿Eliminar «' + id + '» de este iPad?')) return;
@@ -867,6 +908,111 @@ $('#btnWipe').onclick = async () => {
 $('#btnManage').onclick = () => { $('#manage').classList.remove('hidden'); $('#progress').textContent = ''; renderManage(); };
 $('#btnCloseManage').onclick = () => $('#manage').classList.add('hidden');
 $('#manage').addEventListener('click', e => { if (e.target.id === 'manage') $('#manage').classList.add('hidden'); });
+
+/* =========================================================
+   EDIT: ficha de la jugada (se guarda en el catálogo del iPad)
+   ========================================================= */
+function ensureCatalog() {
+  if (!S.catalog) S.catalog = { tipo: 'catalogo-jugadas', version: 1, titulo: 'Mi catálogo', familias: [], jugadas: [] };
+  S.catalog.familias = S.catalog.familias || [];
+  S.catalog.jugadas = S.catalog.jugadas || [];
+  return S.catalog;
+}
+function slug(s) { return norm(s).replace(/ /g, '-') || 'jugada'; }
+function uniqueId(base, list) { let id = base, n = 2; while (list.some(x => x.id === id)) id = base + '-' + n++; return id; }
+const splitList = s => s.split(',').map(x => x.trim()).filter(Boolean);
+
+let EDIT = null;   // { video, play, tags:Set, onSave }
+function famOptions(sel) {
+  const fams = [...FAMS.values()].sort((a, b) => a.order - b.order);
+  return `<option value="">Otras (sin familia)</option>` +
+    fams.map(f => `<option value="${esc(f.id)}" ${sel === f.id ? 'selected' : ''}>${esc(f.nombre)}</option>`).join('') +
+    `<option value="__new">＋ Nueva familia…</option>`;
+}
+function renderEditTags() {
+  const main = $('#eFam').value;
+  const fams = [...FAMS.values()].sort((a, b) => a.order - b.order).filter(f => f.id !== main);
+  $('#eTags').innerHTML = fams.map(f =>
+    `<button class="chip ${EDIT.tags.has(f.id) ? 'on' : ''}" data-t="${esc(f.id)}">${esc(f.nombre)}</button>`).join('') ||
+    '<span class="note">No hay otras familias.</span>';
+}
+function openEdit(it, onSave) {
+  const p = it.play;
+  EDIT = { video: it.video, play: p, tags: new Set(p ? p.etiquetas || [] : []), onSave };
+  $('#eName').value = it.name;
+  $('#eFam').innerHTML = famOptions(p ? p.familia : '');
+  $('#eNewFam').value = ''; $('#eNewFamWrap').classList.add('hidden');
+  $('#eAlias').value = p ? (p.alias || []).join(', ') : '';
+  $('#eDesc').value = p ? p.descripcion || '' : '';
+  $('#eInfo').textContent = it.video
+    ? 'Vídeo: ' + it.video.fileName + (p ? '' : ' · Al guardar se añade al catálogo como jugada nueva.')
+    : '';
+  renderEditTags();
+  $('#edit').classList.remove('hidden');
+}
+function closeEdit() { $('#edit').classList.add('hidden'); document.activeElement && document.activeElement.blur(); EDIT = null; }
+async function saveEdit() {
+  const name = $('#eName').value.trim();
+  if (!name) { alert('Pon un nombre a la jugada.'); return; }
+  const cat = ensureCatalog();
+  let fam = $('#eFam').value;
+  if (fam === '__new') {
+    const fn = $('#eNewFam').value.trim();
+    if (!fn) { alert('Escribe el nombre de la nueva familia.'); return; }
+    const ex = cat.familias.find(f => norm(f.nombre) === norm(fn));
+    fam = ex ? ex.id : uniqueId(slug(fn), cat.familias);
+    if (!ex) cat.familias.push({ id: fam, nombre: fn });
+  }
+  let play = EDIT.play && cat.jugadas.find(p => p.id === EDIT.play.id);
+  if (!play) { play = { id: uniqueId(slug(name), cat.jugadas) }; cat.jugadas.push(play); }
+  // los vídeos que se emparejan solos por nombre quedan asignados fijos, por si cambia el nombre de la jugada
+  const vids = S.videos.filter(v => v === EDIT.video || (!v.playId && matchFile(v.fileName) === play.id));
+  Object.assign(play, {
+    nombre: name, familia: fam, alias: splitList($('#eAlias').value),
+    etiquetas: [...EDIT.tags].filter(t => t !== fam), descripcion: $('#eDesc').value.trim()
+  });
+  cat.editado = new Date().toISOString();
+  await DB.setkv('catalog', cat); buildLookup();
+  for (const v of vids) {
+    v.playId = play.id;
+    if (v === EDIT.video) v.customName = '';
+    await DB.put('videos', v);
+  }
+  const onSave = EDIT.onSave;
+  closeEdit();
+  renderHome();
+  if (!$('#manage').classList.contains('hidden')) renderManage();
+  if (onSave) onSave(play);
+}
+$('#eFam').addEventListener('change', () => {
+  $('#eNewFamWrap').classList.toggle('hidden', $('#eFam').value !== '__new');
+  renderEditTags();
+});
+$('#eTags').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const t = b.dataset.t; EDIT.tags.has(t) ? EDIT.tags.delete(t) : EDIT.tags.add(t);
+  b.classList.toggle('on', EDIT.tags.has(t));
+});
+$('#eSave').onclick = () => saveEdit().catch(e => alert('No se pudo guardar: ' + e.message));
+$('#eCancel').onclick = closeEdit;
+$('#btnEdit').onclick = () => openEdit(P.item, play => {
+  P.item = P.item.video ? videoItem(P.item.video) : playItem(play);
+  showItemInfo(P.item);
+});
+
+async function exportCatalog() {
+  if (!S.catalog) { alert('Todavía no hay catálogo.'); return; }
+  const name = 'catalogo_jugadas.json';
+  const file = new File([JSON.stringify(S.catalog, null, 2)], name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); } catch (e) {}   // cancelar no es un error
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+$('#btnExport').onclick = exportCatalog;
 
 /* =========================================================
    HOME events
