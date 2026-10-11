@@ -127,6 +127,12 @@ header.top h1 span{color:var(--accent)}
 #aTop .pill{max-width:calc(100% - 290px)}
 #rec{z-index:40}
 #roster{z-index:30}
+#txt{z-index:30}
+#txt .row{align-items:center}
+#txt .tb{min-width:56px;padding:0 14px}
+#tColors .sw{width:48px;height:40px}
+#tSize .chip{min-width:52px}
+#aTools [data-tool="text"]{font:700 22px Georgia,serif}
 #roster .chip{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:700;border:0}
 #roster .chip.att{background:#2f63e6}
 #roster .chip.def{background:#c8213b}
@@ -255,6 +261,7 @@ header.top h1 span{color:var(--accent)}
       <button class="tb on" data-tool="free" title="Trazo libre">✎</button>
       <button class="tb" data-tool="move" title="Desplazamiento (flecha)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 18c4-9 10-11 17-11"/><path d="M15 3l5 4-5 4"/></svg></button>
       <button class="tb" data-tool="pass" title="Pase (discontinua)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="3 3.5"><path d="M3 20L19 5"/><path d="M12 5h7v7" stroke-dasharray="none"/></svg></button>
+      <button class="tb" data-tool="text" title="Texto">T</button>
       <button class="tb" data-tool="erase" title="Goma">⌫</button>
     </div>
     <div class="sep"></div>
@@ -286,6 +293,25 @@ header.top h1 span{color:var(--accent)}
           <button class="bigbtn sec" id="rAddA">＋ Atacante</button><button class="bigbtn sec" id="rAddD">＋ Defensor</button></div>
       </div>
       <div class="note">Toca a un jugador para <b>quitarlo de toda la jugada</b> (p. ej. 6:5). Los nuevos aparecen cerca del centro: arrástralos a su sitio en <b>Inicio</b>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TEXTO EN LA ANIMACIÓN ================= -->
+<section id="txt" class="modal hidden">
+  <div class="box" style="width:min(560px,100%)">
+    <div class="mh"><h2>Texto</h2>
+      <button class="iconbtn" id="tCancel">Cancelar</button><button class="iconbtn save" id="tOk">Aceptar</button></div>
+    <div class="mb">
+      <label class="fld">Texto<textarea id="tText" style="min-height:90px" placeholder="Escribe el texto…"></textarea></label>
+      <div class="fld">Formato<div class="row" id="tFmt">
+        <button class="tb" data-f="b"><b>B</b></button><button class="tb" data-f="i"><i>I</i></button>
+        <button class="tb" data-f="u"><u>U</u></button><button class="tb" data-f="bg">Fondo</button></div></div>
+      <div class="fld">Tamaño<div class="row" id="tSize">
+        <button class="chip" data-s="s">S</button><button class="chip" data-s="m">M</button>
+        <button class="chip" data-s="l">L</button><button class="chip" data-s="xl">XL</button></div></div>
+      <div class="fld">Color<div class="row" id="tColors"></div></div>
+      <button class="bigbtn sec" id="tDel">Eliminar texto</button>
     </div>
   </div>
 </section>
@@ -347,7 +373,7 @@ header.top h1 span{color:var(--accent)}
 
 <script>
 'use strict';
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.7.0';
 
 /* =========================================================
    IndexedDB
@@ -619,7 +645,7 @@ const DEF_SETS = {
   '5:1': [['EXT', 0.70, 0.19], ['2', 0.575, 0.32], ['3', 0.53, 0.50], ['2', 0.575, 0.68], ['EXT', 0.70, 0.81], ['AV', 0.475, 0.50]]
 };
 const DEFAULT_POS = { EI: [0.80, 0.135], LI: [0.48, 0.17], CT: [0.40, 0.50], LD: [0.48, 0.83], ED: [0.80, 0.865], PI: [0.61, 0.50] };
-const A_HOLD0 = 1, A_GAP = 0.25, A_HOLD_END = 1.5, A_STEP_MIN = 1, A_SPEED = 0.22, A_BALL_SPEED = 0.7;
+const A_HOLD0 = 1, A_GAP = 0.25, A_HOLD_END = 1.5, A_STEP_MIN = 1, A_SPEED = 0.22, A_BALL_SPEED = 0.7, A_SHOT_SPEED = 1.1;
 const BALL_OFF = [0.04, 0.035];
 const TRAIL = '#10202a';
 const r4 = v => Math.round(v * 1e4) / 1e4;
@@ -632,15 +658,30 @@ function newAnim() { return { v: 1, pos: clonePos(DEFAULT_POS), ball: 'CT', step
 // estado (posiciones y quién tiene el balón) al empezar cada paso, más el final
 // un pase solo vale si va a otro atacante (al editar pasos anteriores puede quedar apuntando al que ya tiene el balón)
 const validPass = (s, holder, pos) => s.pass && s.pass.to !== holder && !isDef(s.pass.to) && pos[s.pass.to] ? s.pass : null;
+// tiro / balón suelto: step.ball = recorrido del balón; después queda suelto (ball = null, loose = punto)
+const hasShot = s => !!(s.ball && s.ball.length > 1);
+const stBallXY = st => st.ball ? ballXY(st.pos[st.ball]) : st.loose;
 function animStates(a) {
-  const st = [{ pos: clonePos(a.pos), ball: a.ball }];
+  const st = [{ pos: clonePos(a.pos), ball: a.ball, loose: null }];
   for (const s of a.steps) {
-    const prev = st[st.length - 1], pos = clonePos(prev.pos), ps = validPass(s, prev.ball, prev.pos);
+    const prev = st[st.length - 1], pos = clonePos(prev.pos), ps = hasShot(s) ? null : validPass(s, prev.ball, prev.pos);
     for (const id in s.moves) if (pos[id]) { const p = s.moves[id]; pos[id] = p[p.length - 1].slice(); }
-    st.push({ pos, ball: ps ? ps.to : prev.ball });
+    if (hasShot(s)) st.push({ pos, ball: null, loose: s.ball[s.ball.length - 1].slice() });
+    else st.push({ pos, ball: ps ? ps.to : prev.ball, loose: ps ? null : prev.loose });
   }
   return st;
 }
+// copia del recorrido que sale de p y mantiene su destino (el tirador puede haber cambiado de sitio al editar)
+function fitPath(path, p) {
+  const dx = p[0] - path[0][0], dy = p[1] - path[0][1];
+  if (!dx && !dy) return path;
+  const cum = [0];
+  for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + adist(path[i - 1], path[i]));
+  const L = cum[cum.length - 1];
+  return path.map((q, i) => { const w = L ? 1 - cum[i] / L : 1; return [q[0] + dx * w, q[1] + dy * w]; });
+}
+// de dónde sale el balón en el paso: del que lo tiene (donde acaba su carrera) o de donde quedó suelto
+const shotStart = (start, end) => start.ball ? ballXY(end.pos[start.ball]) : start.loose;
 // lo pintado en cada fase (0 = inicio, k = paso k): heredado de las anteriores con 📌 + lo propio
 function stepDraw(a, i) { const o = i === 0 ? a : a.steps[i - 1]; return { draw: o.draw || [], keep: !!o.keep }; }
 function visibleDraw(a) {
@@ -678,10 +719,19 @@ function animTimeline(a) {
       paths[id] = { pts, cum, len: cum[cum.length - 1] };
       maxLen = Math.max(maxLen, paths[id].len);
     }
-    let dur = Math.max(A_STEP_MIN, maxLen / A_SPEED), flight = 0;
-    const ps = validPass(s, start.ball, start.pos);
-    if (ps) { flight = Math.max(0.5, adist(start.pos[start.ball], end.pos[ps.to]) / A_BALL_SPEED); dur = Math.max(dur, flight); }
-    steps.push({ t0: t, dur, paths, flight, start, end, pass: ps ? { from: start.ball, to: ps.to } : null });
+    let dur = Math.max(A_STEP_MIN, maxLen / A_SPEED), flight = 0, shot = null;
+    const ps = hasShot(s) ? null : validPass(s, start.ball, start.pos);
+    if (ps) {
+      const from = start.ball ? start.pos[start.ball] : start.loose;
+      flight = Math.max(0.5, adist(from, end.pos[ps.to]) / A_BALL_SPEED); dur = Math.max(dur, flight);
+    }
+    if (hasShot(s)) {
+      const pts = fitPath(s.ball, shotStart(start, end)), cum = [0];
+      for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + adist(pts[k - 1], pts[k]));
+      shot = { pts, cum, len: cum[cum.length - 1] };
+      flight = Math.max(0.4, shot.len / A_SHOT_SPEED); dur = Math.max(dur, flight);
+    }
+    steps.push({ t0: t, dur, paths, flight, shot, start, end, pass: ps ? { from: start.ball, to: ps.to } : null });
     t += dur + A_GAP;
   });
   return { states, steps, draws: visibleDraw(a), total: t + A_HOLD_END };
@@ -700,19 +750,18 @@ function animScene(a, tl, t) {
   let sp = null, idx = -1;
   tl.steps.forEach((x, i) => { if (t >= x.t0) { sp = x; idx = i; } });
   const labels = a.labels || {}, dv = tl.draws[idx + 1], strokes = dv.inh.concat(dv.own);
-  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels, strokes }; }
+  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: stBallXY(st), labels, strokes }; }
   const lt = t - sp.t0;
-  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels, strokes }; }
+  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: stBallXY(st), labels, strokes }; }
   const e = ease(lt / sp.dur), pos = clonePos(sp.start.pos);
   for (const id in sp.paths) if (pos[id]) pos[id] = pointAt(sp.paths[id], e * sp.paths[id].len);
-  let ball = ballXY(pos[sp.start.ball]);
-  if (sp.pass) {
-    const fs = sp.dur - sp.flight;   // el balón vuela al final del paso: llega cuando el receptor termina su carrera
-    if (lt >= fs) {
-      const f = ease((lt - fs) / sp.flight), a0 = ballXY(pos[sp.pass.from]), a1 = ballXY(pos[sp.pass.to]);
-      ball = [a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f];
-    }
-  }
+  let ball = sp.start.ball ? ballXY(pos[sp.start.ball]) : sp.start.loose;
+  const fs = sp.dur - sp.flight;   // el balón vuela al final del paso: llega cuando el receptor termina su carrera
+  if (sp.pass && lt >= fs) {
+    const f = ease((lt - fs) / sp.flight), a1 = ballXY(pos[sp.pass.to]);
+    const a0 = sp.pass.from ? ballXY(pos[sp.pass.from]) : sp.start.loose;
+    ball = [a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f];
+  } else if (sp.shot && lt >= fs) ball = pointAt(sp.shot, (lt - fs) / sp.flight * sp.shot.len);
   return { pos, ball, labels, strokes };
 }
 
@@ -934,7 +983,36 @@ function redraw() {
   for (const s of P.strokes) drawStroke(ctx, s);
   if (P.cur) drawStroke(ctx, P.cur);
 }
+// textos: { tool:'text', text, x, y (centro, 0–1), color, size:'s'|'m'|'l'|'xl', b, i, u, bg }
+const TXT_SIZES = { s: 0.032, m: 0.045, l: 0.065, xl: 0.09 };
+const MEAS = document.createElement('canvas').getContext('2d');
+const textFont = (t, W) => `${t.i ? 'italic ' : ''}${t.b ? 700 : 500} ${(TXT_SIZES[t.size] || TXT_SIZES.m) * W}px -apple-system, Helvetica, Arial, sans-serif`;
+function textBox(t, W, H) {
+  MEAS.font = textFont(t, W);
+  const fs = (TXT_SIZES[t.size] || TXT_SIZES.m) * W, lines = String(t.text).split('\n'), lh = fs * 1.2, pad = fs * 0.3;
+  const w = Math.max(...lines.map(l => MEAS.measureText(l).width)), h = lines.length * lh, cx = t.x * W, cy = t.y * H;
+  return { lines, fs, lh, pad, x0: cx - w / 2 - pad, y0: cy - h / 2 - pad, x1: cx + w / 2 + pad, y1: cy + h / 2 + pad };
+}
+function drawText(ctx, t) {
+  const W = ctx.canvas.width, H = ctx.canvas.height, bx = textBox(t, W, H);
+  ctx.save();
+  if (t.bg) {
+    const r = bx.fs * 0.3, x = bx.x0, y = bx.y0, w = bx.x1 - bx.x0, h = bx.y1 - bx.y0;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    ctx.fillStyle = 'rgba(5,12,16,.62)'; ctx.fill();
+  } else { ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = bx.fs * 0.15; }
+  ctx.font = textFont(t, W); ctx.fillStyle = t.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  bx.lines.forEach((l, i) => {
+    const y = bx.y0 + bx.pad + bx.lh * (i + 0.5);
+    ctx.fillText(l, t.x * W, y);
+    if (t.u) { const lw = MEAS.measureText(l).width; ctx.fillRect(t.x * W - lw / 2, y + bx.fs * 0.42, lw, Math.max(1, bx.fs * 0.07)); }
+  });
+  ctx.restore();
+}
 function drawStroke(ctx, s) {
+  if (s.tool === 'text') return drawText(ctx, s);
   const W = ctx.canvas.width, H = ctx.canvas.height;
   const pts = s.pts.map(p => [p[0] * W, p[1] * H]);
   if (!pts.length) return;
@@ -943,7 +1021,7 @@ function drawStroke(ctx, s) {
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = lw;
   ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = lw * 0.8;
-  if (s.tool === 'pass') ctx.setLineDash([lw * 2.2, lw * 1.8]);
+  if (s.tool === 'pass' || s.tool === 'shot') ctx.setLineDash([lw * 2.2, lw * 1.8]);
   ctx.beginPath();
   if (s.tool === 'pass') {
     ctx.moveTo(pts[0][0], pts[0][1]);
@@ -961,7 +1039,7 @@ function drawStroke(ctx, s) {
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  if ((s.tool === 'move' || s.tool === 'pass') && pts.length > 1) {
+  if ((s.tool === 'move' || s.tool === 'pass' || s.tool === 'shot') && pts.length > 1) {
     const e = pts[pts.length - 1];
     // direction from a point ~ 4 line-widths back along the path
     let k = pts.length - 2, back = pts[k];
@@ -991,6 +1069,7 @@ function canDraw(e) {
   return P.fingerDraw && !P.penSeen;
 }
 function strokeNear(s, p, W, H) {
+  if (s.tool === 'text') { const b = textBox(s, W, H), x = p[0] * W, y = p[1] * H; return x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1; }
   const r = 0.04 * W;
   if (s.tool === 'pass' && s.pts.length === 2) {           // distance to segment
     const [a, b] = s.pts, ax = a[0] * W, ay = a[1] * H, bx = b[0] * W, by = b[1] * H, px = p[0] * W, py = p[1] * H;
@@ -1363,7 +1442,8 @@ $('#btnEdit').onclick = () => openEdit(P.item, play => {
    ========================================================= */
 const aCourt = $('#aCourt'), aScene = $('#aScene');
 const AE = { anim: null, playId: null, sel: 0, undo: [], drag: null, armed: false, msg: '', msgT: 0,
-  paint: false, tool: 'free', color: COLORS[0], cur: null };
+  paint: false, tool: 'free', color: COLORS[0], cur: null,
+  txtStyle: { color: COLORS[3], size: 'm', b: true, i: false, u: false, bg: true } };
 COLORS.forEach((c, i) => {
   const b = document.createElement('button');
   b.className = 'sw' + (i === 0 ? ' on' : ''); b.style.background = c; b.dataset.c = c;
@@ -1389,20 +1469,23 @@ function aeLayout() {
 }
 function aeView() {
   const st = animStates(AE.anim);
-  if (AE.sel === 0) return { st, pos: st[0].pos, ball: st[0].ball, trails: [], ghosts: null };
+  if (AE.sel === 0) return { st, pos: st[0].pos, ball: st[0].ball, bxy: stBallXY(st[0]), trails: [], ghosts: null };
   const k = AE.sel - 1, s = AE.anim.steps[k], end = st[k + 1], ghosts = {};
   const trails = Object.entries(s.moves).map(([id, pts]) => { ghosts[id] = st[k].pos[id]; return { tool: 'move', color: TRAIL, pts }; });
-  const ps = validPass(s, st[k].ball, st[k].pos);
-  if (ps) trails.push({ tool: 'pass', color: TRAIL, pts: [end.pos[st[k].ball], end.pos[ps.to]] });
-  return { st, pos: end.pos, ball: end.ball, trails, ghosts, holder: st[k].ball };
+  const ps = hasShot(s) ? null : validPass(s, st[k].ball, st[k].pos);
+  if (ps) trails.push({ tool: 'pass', color: TRAIL, pts: [st[k].ball ? end.pos[st[k].ball] : st[k].loose, end.pos[ps.to]] });
+  if (hasShot(s)) trails.push({ tool: 'shot', color: TRAIL, pts: fitPath(s.ball, shotStart(st[k], end)) });
+  return { st, pos: end.pos, ball: end.ball, bxy: stBallXY(end), trails, ghosts, holder: st[k].ball, k };
 }
 function aeHint() {
   if (AE.msg) return AE.msg;
   if (!AEM.paused) return 'Reproduciendo… toca la pista para parar.';
+  if (AE.paint && AE.tool === 'text') return 'Texto: toca la pista para escribir. Arrastra un texto para moverlo o tócalo para editarlo. 📌 lo conserva en el paso siguiente.';
   if (AE.paint) return `Pintando en ${AE.sel ? 'el paso ' + AE.sel : 'el inicio'}: aparece al llegar aquí. 📌 lo mantiene en el paso siguiente. ✏️ para volver a mover jugadores.`;
   if (AE.sel === 0) return 'Arrastra a los jugadores a su sitio y toca a un atacante para darle el balón. Luego pulsa ＋ Paso.';
   if (AE.armed) return 'Ahora toca al atacante que recibe el pase (o al que tiene el balón para cancelar).';
-  return `Paso ${AE.sel}: arrastra a cada jugador por donde corre. Pase: toca al que tiene el balón y luego al receptor.`;
+  if (!animStates(AE.anim)[AE.sel - 1].ball) return `Paso ${AE.sel}: balón suelto. Toca a un atacante para que lo recoja, o arrástralo para moverlo.`;
+  return `Paso ${AE.sel}: arrastra a los jugadores por donde corren. Pase: toca al que tiene el balón y luego al receptor. Tiro: arrastra el balón.`;
 }
 function aeFlash(m) { AE.msg = m; clearTimeout(AE.msgT); AE.msgT = setTimeout(() => { AE.msg = ''; aeRender(); }, 2600); aeRender(); }
 function aeRender() {
@@ -1419,7 +1502,7 @@ function aeRender() {
   if (!AEM.paused) return;   // la vista previa pinta sola
   const v = aeView(), dv = visibleDraw(AE.anim)[AE.sel], ctx = aScene.getContext('2d'), W = aScene.width, H = aScene.height;
   ctx.clearRect(0, 0, W, H);
-  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]), labels: AE.anim.labels, strokes: AE.cur ? dv.own.concat([AE.cur]) : dv.own },
+  drawScene(ctx, W, H, { pos: v.pos, ball: v.bxy, labels: AE.anim.labels, strokes: AE.cur ? dv.own.concat([AE.cur]) : dv.own },
     { trails: v.trails, ghosts: v.ghosts, faded: dv.inh, hl: AE.armed ? v.holder : null });
 }
 function aeSnap() { AE.undo.push(JSON.stringify(AE.anim)); if (AE.undo.length > 100) AE.undo.shift(); }
@@ -1443,6 +1526,13 @@ function aeErase(p) {
 aScene.addEventListener('pointerdown', e => {
   if (!AEM.paused) { AEM.pause(); return; }
   if (AE.drag) return;
+  if (AE.paint && AE.tool === 'text') {
+    e.preventDefault();
+    aScene.setPointerCapture(e.pointerId);
+    const p = aePt(e), t = aeTextAt(p);
+    AE.drag = { txt: true, text: t, pid: e.pointerId, p0: p, off: t ? [t.x - p[0], t.y - p[1]] : null, moved: false, snap: JSON.stringify(AE.anim) };
+    return;
+  }
   if (AE.paint) {
     e.preventDefault();
     aScene.setPointerCapture(e.pointerId);
@@ -1452,7 +1542,16 @@ aScene.addEventListener('pointerdown', e => {
     else AE.cur = { tool: AE.tool, color: AE.color, pts: [[r4(p[0]), r4(p[1])]] };
     aeRender(); return;
   }
-  const p = aePt(e), v = aeView(), id = aeHit(p, v.pos);
+  const p = aePt(e), v = aeView();
+  // el balón tiene prioridad sobre los jugadores si se toca justo encima
+  if (v.bxy && Math.hypot((v.bxy[0] - p[0]) * aScene.clientWidth, (v.bxy[1] - p[1]) * aScene.clientHeight) < aScene.clientWidth * 0.035) {
+    e.preventDefault();
+    if (AE.sel === 0) { aeFlash('En el inicio el balón lo tiene un atacante: toca a uno para dárselo. El tiro se hace en un paso.'); return; }
+    aScene.setPointerCapture(e.pointerId);
+    AE.drag = { ball: true, pid: e.pointerId, p0: p, moved: false, start: shotStart(v.st[v.k], v.st[v.k + 1]), snap: JSON.stringify(AE.anim) };
+    return;
+  }
+  const id = aeHit(p, v.pos);
   if (!id) return;
   e.preventDefault();
   aScene.setPointerCapture(e.pointerId);
@@ -1464,6 +1563,20 @@ aScene.addEventListener('pointermove', e => {
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   for (const ev of (evs.length ? evs : [e])) {
     const p = aePt(ev);
+    if (d.txt) {
+      if (!d.moved && Math.hypot((p[0] - d.p0[0]) * aScene.clientWidth, (p[1] - d.p0[1]) * aScene.clientHeight) < 8) continue;
+      d.moved = true;
+      if (d.text) { d.text.x = r4(Math.min(1, Math.max(0, p[0] + d.off[0]))); d.text.y = r4(Math.min(1, Math.max(0, p[1] + d.off[1]))); }
+      continue;
+    }
+    if (d.ball) {
+      if (!d.moved && Math.hypot((p[0] - d.p0[0]) * aScene.clientWidth, (p[1] - d.p0[1]) * aScene.clientHeight) < 8) continue;
+      const step = AE.anim.steps[AE.sel - 1], q = [r4(p[0]), r4(p[1])];
+      if (!d.moved) { d.moved = true; step.ball = [d.start.map(r4)]; step.pass = null; AE.armed = false; }
+      const last = step.ball[step.ball.length - 1];
+      if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.004) step.ball.push(q);
+      continue;
+    }
     if (d.paint) {
       if (AE.tool === 'erase') { if (aeErase(p)) d.changed = true; continue; }
       const q = [r4(p[0]), r4(p[1])], c = AE.cur;
@@ -1485,6 +1598,16 @@ aScene.addEventListener('pointermove', e => {
 function aeUp(e) {
   const d = AE.drag; if (!d || e.pointerId !== d.pid) return;
   AE.drag = null;
+  if (d.txt) {
+    if (d.moved) { if (d.text) AE.undo.push(d.snap); aeRender(); }
+    else if (e.type === 'pointerup') openText(d.text, d.p0);
+    return;
+  }
+  if (d.ball) {
+    if (d.moved) AE.undo.push(d.snap);
+    else aeFlash('Arrastra el balón para un tiro o un balón suelto.');
+    aeRender(); return;
+  }
   if (d.paint) {
     if (AE.cur) {
       const c = AE.cur; AE.cur = null;
@@ -1507,9 +1630,10 @@ function aeTap(id) {
     aeRender(); return;
   }
   const step = AE.anim.steps[AE.sel - 1], holder = animStates(AE.anim)[AE.sel - 1].ball;
+  if (!holder) { aeSnap(); step.pass = { to: id }; delete step.ball; aeRender(); return; }   // recoger el balón suelto
   if (AE.armed) {
     AE.armed = false;
-    if (id !== holder) { aeSnap(); step.pass = { to: id }; }
+    if (id !== holder) { aeSnap(); step.pass = { to: id }; delete step.ball; }
     aeRender(); return;
   }
   if (id === holder) { AE.armed = true; aeRender(); }
@@ -1530,7 +1654,7 @@ $('#aAdd').onclick = () => {
 $('#aDel').onclick = () => {
   if (AE.sel === 0) return;
   const k = AE.sel - 1, s = AE.anim.steps[k];
-  if ((Object.keys(s.moves).length || s.pass || (s.draw || []).length) && !confirm('¿Borrar el paso ' + AE.sel + '?')) return;
+  if ((Object.keys(s.moves).length || s.pass || hasShot(s) || (s.draw || []).length) && !confirm('¿Borrar el paso ' + AE.sel + '?')) return;
   AEM.pause(); aeSnap();
   const before = animStates(AE.anim)[k].pos;
   AE.anim.steps.splice(k, 1);
@@ -1543,6 +1667,7 @@ $('#aTools').addEventListener('click', e => {
   const b = e.target.closest('.tb'); if (!b) return;
   AE.tool = b.dataset.tool;
   $('#aTools').querySelectorAll('.tb').forEach(x => x.classList.toggle('on', x === b));
+  aeRender();
 });
 $('#aColors').addEventListener('click', e => {
   const b = e.target.closest('.sw'); if (!b) return;
@@ -1557,6 +1682,57 @@ $('#aKeep').onclick = () => {
   aeFlash(o.keep ? '📌 Lo pintado aquí seguirá en el paso siguiente.' : 'Lo pintado aquí desaparecerá en el paso siguiente.');
 };
 $('#aClr').onclick = () => { if (!aeOwn().length) return; aeSnap(); aeOwn().length = 0; aeRender(); };
+
+/* ---- textos ---- */
+// textos visibles en la fase seleccionada (propios y heredados con 📌); el de encima, primero
+function aeTextAt(p) {
+  const dv = visibleDraw(AE.anim)[AE.sel];
+  return dv.inh.concat(dv.own).filter(s => s.tool === 'text').reverse()
+    .find(s => strokeNear(s, p, aScene.width, aScene.height)) || null;
+}
+function aeRemoveObj(obj) {
+  for (const list of [AE.anim.draw, ...AE.anim.steps.map(s => s.draw)]) {
+    const i = list ? list.indexOf(obj) : -1;
+    if (i >= 0) { list.splice(i, 1); return; }
+  }
+}
+const TXT = { obj: null, p: null, style: null };
+COLORS.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'sw'; b.style.background = c; b.dataset.c = c;
+  $('#tColors').appendChild(b);
+});
+function renderTextStyle() {
+  const st = TXT.style;
+  $('#tFmt').querySelectorAll('.tb').forEach(b => b.classList.toggle('on', !!st[b.dataset.f]));
+  $('#tSize').querySelectorAll('.chip').forEach(b => b.classList.toggle('on', st.size === b.dataset.s));
+  $('#tColors').querySelectorAll('.sw').forEach(b => b.classList.toggle('on', st.color === b.dataset.c));
+}
+function openText(obj, p) {
+  TXT.obj = obj; TXT.p = p;
+  const src = obj || AE.txtStyle;
+  TXT.style = { color: src.color, size: src.size, b: !!src.b, i: !!src.i, u: !!src.u, bg: !!src.bg };
+  $('#tText').value = obj ? obj.text : '';
+  $('#tDel').classList.toggle('hidden', !obj);
+  renderTextStyle();
+  $('#txt').classList.remove('hidden');
+  $('#tText').focus();
+}
+function closeText() { $('#txt').classList.add('hidden'); document.activeElement && document.activeElement.blur(); TXT.obj = null; }
+$('#tFmt').addEventListener('click', e => { const b = e.target.closest('.tb'); if (!b) return; TXT.style[b.dataset.f] = !TXT.style[b.dataset.f]; renderTextStyle(); });
+$('#tSize').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; TXT.style.size = b.dataset.s; renderTextStyle(); });
+$('#tColors').addEventListener('click', e => { const b = e.target.closest('.sw'); if (!b) return; TXT.style.color = b.dataset.c; renderTextStyle(); });
+$('#tCancel').onclick = closeText;
+$('#tDel').onclick = () => { if (TXT.obj) { aeSnap(); aeRemoveObj(TXT.obj); } closeText(); aeRender(); };
+$('#tOk').onclick = () => {
+  const text = $('#tText').value.replace(/\s+$/, ''), st = { ...TXT.style };
+  if (!text.trim()) { if (TXT.obj) { aeSnap(); aeRemoveObj(TXT.obj); } closeText(); aeRender(); return; }
+  aeSnap();
+  if (TXT.obj) Object.assign(TXT.obj, { text, ...st });
+  else aeOwn().push({ tool: 'text', text, x: r4(TXT.p[0]), y: r4(TXT.p[1]), ...st });
+  AE.txtStyle = st;
+  closeText(); aeRender();
+};
 
 /* ---- jugadores: defensa base, añadir y quitar ---- */
 const attIds = a => Object.keys(a.pos).filter(id => !isDef(id));
