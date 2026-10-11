@@ -99,12 +99,12 @@ header.top h1 span{color:var(--accent)}
 .sw{border-radius:22px;border:3px solid transparent;flex:none}
 .sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
 /* paleta de dibujo (izquierda, se puede ocultar) */
-#palette{left:calc(var(--sal) + 8px);top:50%;transform:translateY(-50%);padding:7px;display:flex;flex-direction:column;gap:6px;
+#palette,#aPal{left:calc(var(--sal) + 8px);top:50%;transform:translateY(-50%);padding:7px;display:flex;flex-direction:column;gap:6px;
   max-height:calc(100% - var(--sat) - var(--sab) - 170px);overflow-y:auto;scrollbar-width:none}
-#palette::-webkit-scrollbar{display:none}
-#tools,#colors{display:flex;flex-direction:column;gap:6px}
-#palette .tb{width:50px;height:48px;padding:0}
-#palette .sw{width:50px;height:38px}
+#palette::-webkit-scrollbar,#aPal::-webkit-scrollbar{display:none}
+#tools,#colors,#aTools,#aColors{display:flex;flex-direction:column;gap:6px}
+#palette .tb,#aPal .tb{width:50px;height:48px;padding:0}
+#palette .sw,#aPal .sw{width:50px;height:38px}
 .sep{height:1px;background:var(--line);margin:2px 0;flex:none}
 /* barra de vídeo (abajo, siempre visible) */
 .bar{left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 8px);
@@ -126,6 +126,14 @@ header.top h1 span{color:var(--accent)}
 #aHint{font-size:13px;color:var(--muted);line-height:1.3;white-space:normal;margin-top:2px}
 #aTop .pill{max-width:calc(100% - 290px)}
 #rec{z-index:40}
+#roster{z-index:30}
+#roster .chip{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:700;border:0}
+#roster .chip.att{background:#2f63e6}
+#roster .chip.def{background:#c8213b}
+#roster .chip .x{opacity:.75;font-weight:400}
+#roster .addrow{display:flex;gap:8px;flex-wrap:wrap;text-transform:none;letter-spacing:0}
+#roster .addrow input{flex:1;min-width:140px}
+#roster .addrow .bigbtn{height:46px;font-size:16px;padding:0 16px}
 #aSteps{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-left:2px}
 #aSteps::-webkit-scrollbar{display:none}
 #aSteps .chip{height:50px;min-width:50px;padding:0 14px;border-radius:12px}
@@ -239,15 +247,46 @@ header.top h1 span{color:var(--accent)}
     <button class="iconbtn" id="aCancel" title="Salir sin guardar">✕</button>
     <div class="ov pill"><div id="aTitle">Nueva jugada</div><div id="aHint"></div></div>
     <div class="sp"></div>
-    <button class="iconbtn" id="aDef" title="Defensa: sin, 6:0 o 5:1">🛡 Sin</button>
+    <button class="iconbtn" id="aRoster" title="Jugadores: defensa, añadir o quitar">👥</button>
     <button class="iconbtn save" id="aSave">Guardar</button>
+  </div>
+  <div id="aPal" class="ov hidden">
+    <div id="aTools">
+      <button class="tb on" data-tool="free" title="Trazo libre">✎</button>
+      <button class="tb" data-tool="move" title="Desplazamiento (flecha)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 18c4-9 10-11 17-11"/><path d="M15 3l5 4-5 4"/></svg></button>
+      <button class="tb" data-tool="pass" title="Pase (discontinua)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="3 3.5"><path d="M3 20L19 5"/><path d="M12 5h7v7" stroke-dasharray="none"/></svg></button>
+      <button class="tb" data-tool="erase" title="Goma">⌫</button>
+    </div>
+    <div class="sep"></div>
+    <div id="aColors"></div>
+    <div class="sep"></div>
+    <button class="tb" id="aKeep" title="Mantener lo pintado en el paso siguiente">📌</button>
+    <button class="tb" id="aClr" title="Borrar lo pintado en este paso">🗑</button>
   </div>
   <div id="aBar" class="ov bar">
     <div id="aSteps"></div>
+    <button class="tb" id="aPaint" title="Pintar en este paso">✏️</button>
     <button class="tb" id="aAdd" title="Añadir un paso">＋ Paso</button>
     <button class="tb" id="aUndo" title="Deshacer">↶</button>
     <button class="tb" id="aDel" title="Borrar este paso">🗑</button>
     <button class="tb play" id="aPlay" title="Ver la animación">▶︎</button>
+  </div>
+</section>
+
+<!-- ================= JUGADORES DE LA ANIMACIÓN ================= -->
+<section id="roster" class="modal hidden">
+  <div class="box" style="width:min(600px,100%)">
+    <div class="mh"><h2>Jugadores</h2><button class="iconbtn save" id="rDone">Listo</button></div>
+    <div class="mb">
+      <div class="fld">Defensa base<div class="row" id="rDef"></div></div>
+      <div class="fld">Atacantes<div class="row" id="rAtt"></div></div>
+      <div class="fld">Defensores<div class="row" id="rDefs"></div></div>
+      <div class="fld">Añadir jugador
+        <div class="addrow"><input id="rLabel" maxlength="3" placeholder="Nombre (p. ej. PI2)" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="bigbtn sec" id="rAddA">＋ Atacante</button><button class="bigbtn sec" id="rAddD">＋ Defensor</button></div>
+      </div>
+      <div class="note">Toca a un jugador para <b>quitarlo de toda la jugada</b> (p. ej. 6:5). Los nuevos aparecen cerca del centro: arrástralos a su sitio en <b>Inicio</b>.</div>
+    </div>
   </div>
 </section>
 
@@ -308,7 +347,7 @@ header.top h1 span{color:var(--accent)}
 
 <script>
 'use strict';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 
 /* =========================================================
    IndexedDB
@@ -592,15 +631,26 @@ function newAnim() { return { v: 1, pos: clonePos(DEFAULT_POS), ball: 'CT', step
 
 // estado (posiciones y quién tiene el balón) al empezar cada paso, más el final
 // un pase solo vale si va a otro atacante (al editar pasos anteriores puede quedar apuntando al que ya tiene el balón)
-const validPass = (s, holder) => s.pass && s.pass.to !== holder && !isDef(s.pass.to) ? s.pass : null;
+const validPass = (s, holder, pos) => s.pass && s.pass.to !== holder && !isDef(s.pass.to) && pos[s.pass.to] ? s.pass : null;
 function animStates(a) {
   const st = [{ pos: clonePos(a.pos), ball: a.ball }];
   for (const s of a.steps) {
-    const prev = st[st.length - 1], pos = clonePos(prev.pos), ps = validPass(s, prev.ball);
-    for (const id in s.moves) { const p = s.moves[id]; pos[id] = p[p.length - 1].slice(); }
+    const prev = st[st.length - 1], pos = clonePos(prev.pos), ps = validPass(s, prev.ball, prev.pos);
+    for (const id in s.moves) if (pos[id]) { const p = s.moves[id]; pos[id] = p[p.length - 1].slice(); }
     st.push({ pos, ball: ps ? ps.to : prev.ball });
   }
   return st;
+}
+// lo pintado en cada fase (0 = inicio, k = paso k): heredado de las anteriores con 📌 + lo propio
+function stepDraw(a, i) { const o = i === 0 ? a : a.steps[i - 1]; return { draw: o.draw || [], keep: !!o.keep }; }
+function visibleDraw(a) {
+  const out = []; let carry = [];
+  for (let i = 0; i <= a.steps.length; i++) {
+    const d = stepDraw(a, i);
+    out.push({ inh: carry, own: d.draw });
+    carry = d.keep ? carry.concat(d.draw) : [];
+  }
+  return out;
 }
 // el siguiente recorrido de id después del paso k (-1 = inicio) pasa a salir de p, manteniendo su destino
 function reanchor(a, k, id, p) {
@@ -629,12 +679,12 @@ function animTimeline(a) {
       maxLen = Math.max(maxLen, paths[id].len);
     }
     let dur = Math.max(A_STEP_MIN, maxLen / A_SPEED), flight = 0;
-    const ps = validPass(s, start.ball);
+    const ps = validPass(s, start.ball, start.pos);
     if (ps) { flight = Math.max(0.5, adist(start.pos[start.ball], end.pos[ps.to]) / A_BALL_SPEED); dur = Math.max(dur, flight); }
     steps.push({ t0: t, dur, paths, flight, start, end, pass: ps ? { from: start.ball, to: ps.to } : null });
     t += dur + A_GAP;
   });
-  return { states, steps, total: t + A_HOLD_END };
+  return { states, steps, draws: visibleDraw(a), total: t + A_HOLD_END };
 }
 function pointAt(path, d) {
   const { pts, cum } = path;
@@ -649,12 +699,12 @@ function pointAt(path, d) {
 function animScene(a, tl, t) {
   let sp = null, idx = -1;
   tl.steps.forEach((x, i) => { if (t >= x.t0) { sp = x; idx = i; } });
-  const labels = a.labels || {};
-  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels }; }
+  const labels = a.labels || {}, dv = tl.draws[idx + 1], strokes = dv.inh.concat(dv.own);
+  if (!sp) { const st = tl.states[0]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels, strokes }; }
   const lt = t - sp.t0;
-  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels }; }
+  if (lt >= sp.dur) { const st = tl.states[idx + 1]; return { pos: st.pos, ball: ballXY(st.pos[st.ball]), labels, strokes }; }
   const e = ease(lt / sp.dur), pos = clonePos(sp.start.pos);
-  for (const id in sp.paths) pos[id] = pointAt(sp.paths[id], e * sp.paths[id].len);
+  for (const id in sp.paths) if (pos[id]) pos[id] = pointAt(sp.paths[id], e * sp.paths[id].len);
   let ball = ballXY(pos[sp.start.ball]);
   if (sp.pass) {
     const fs = sp.dur - sp.flight;   // el balón vuela al final del paso: llega cuando el receptor termina su carrera
@@ -663,7 +713,7 @@ function animScene(a, tl, t) {
       ball = [a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f];
     }
   }
-  return { pos, ball, labels };
+  return { pos, ball, labels, strokes };
 }
 
 /* ---- dibujo de jugadores y balón (estilo de los vídeos) ---- */
@@ -699,15 +749,17 @@ function drawBall(ctx, x, y, r) {
   ctx.lineWidth = r * 0.1; ctx.strokeStyle = '#1d2b4f'; ctx.stroke();
   ctx.restore();
 }
-// opts: { title, trails:[stroke], ghosts:{id:[x,y]}, hl:id }
+// scene: { pos, ball, labels, strokes }; opts: { title, trails:[stroke], faded:[stroke], ghosts:{id:[x,y]}, hl:id }
 function drawScene(ctx, W, H, scene, opts = {}) {
   const r = W * 0.03;
+  if (opts.faded && opts.faded.length) { ctx.save(); ctx.globalAlpha = 0.45; opts.faded.forEach(t => drawStroke(ctx, t)); ctx.restore(); }
+  for (const t of scene.strokes || []) drawStroke(ctx, t);
   for (const t of opts.trails || []) drawStroke(ctx, t);
   const labels = scene.labels || {}, tok = (id, p, hl) => drawToken(ctx, p[0] * W, p[1] * H, r, labels[id] || id, hl, isDef(id));
   if (opts.ghosts) { ctx.save(); ctx.globalAlpha = 0.3; for (const id in opts.ghosts) tok(id, opts.ghosts[id]); ctx.restore(); }
   for (const id in scene.pos) if (isDef(id)) tok(id, scene.pos[id], opts.hl === id);   // defensa debajo, ataque encima
-  for (const id of ATT) if (scene.pos[id]) tok(id, scene.pos[id], opts.hl === id);
-  if (scene.ball) drawBall(ctx, scene.ball[0] * W, scene.ball[1] * H, r * 0.62);
+  for (const id in scene.pos) if (!isDef(id)) tok(id, scene.pos[id], opts.hl === id);
+  if (scene.ball && !isNaN(scene.ball[0])) drawBall(ctx, scene.ball[0] * W, scene.ball[1] * H, r * 0.62);
   if (opts.title) {
     ctx.save(); ctx.fillStyle = '#0b1a20'; ctx.font = `500 ${W * 0.028}px -apple-system, Helvetica, Arial, sans-serif`;
     ctx.textBaseline = 'top'; ctx.fillText(opts.title, W * 0.125, H * 0.128); ctx.restore();
@@ -938,19 +990,19 @@ function canDraw(e) {
   if (e.pointerType === 'mouse') return true;
   return P.fingerDraw && !P.penSeen;
 }
+function strokeNear(s, p, W, H) {
+  const r = 0.04 * W;
+  if (s.tool === 'pass' && s.pts.length === 2) {           // distance to segment
+    const [a, b] = s.pts, ax = a[0] * W, ay = a[1] * H, bx = b[0] * W, by = b[1] * H, px = p[0] * W, py = p[1] * H;
+    const l2 = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l2));
+    return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay))) < r;
+  }
+  return s.pts.some(q => Math.hypot((q[0] - p[0]) * W, (q[1] - p[1]) * H) < r);
+}
 function eraseAt(p) {
-  const W = ink.width, H = ink.height, r = 0.04 * W;
   const before = P.strokes.length;
-  const near = s => {
-    if (s.tool === 'pass' && s.pts.length === 2) {           // distance to segment
-      const [a, b] = s.pts, ax = a[0] * W, ay = a[1] * H, bx = b[0] * W, by = b[1] * H, px = p[0] * W, py = p[1] * H;
-      const l2 = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
-      const t = Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / l2));
-      return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay))) < r;
-    }
-    return s.pts.some(q => Math.hypot((q[0] - p[0]) * W, (q[1] - p[1]) * H) < r);
-  };
-  P.strokes = P.strokes.filter(s => !near(s));
+  P.strokes = P.strokes.filter(s => !strokeNear(s, p, ink.width, ink.height));
   if (P.strokes.length !== before) redraw();
 }
 ink.addEventListener('pointerdown', e => {
@@ -1310,12 +1362,18 @@ $('#btnEdit').onclick = () => openEdit(P.item, play => {
    Solo se modifica el último paso (o el inicio si aún no hay pasos).
    ========================================================= */
 const aCourt = $('#aCourt'), aScene = $('#aScene');
-const AE = { anim: null, playId: null, sel: 0, undo: [], drag: null, armed: false, msg: '', msgT: 0 };
+const AE = { anim: null, playId: null, sel: 0, undo: [], drag: null, armed: false, msg: '', msgT: 0,
+  paint: false, tool: 'free', color: COLORS[0], cur: null };
+COLORS.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.className = 'sw' + (i === 0 ? ' on' : ''); b.style.background = c; b.dataset.c = c;
+  $('#aColors').appendChild(b);
+});
 const AEM = new AnimMedia(aScene);   // vista previa
 function openAnimEditor(play) {
   AE.anim = play && play.animacion ? JSON.parse(JSON.stringify(play.animacion)) : newAnim();
   AE.playId = play ? play.id : null;
-  AE.sel = AE.anim.steps.length; AE.undo = []; AE.armed = false; AE.msg = '';
+  AE.sel = AE.anim.steps.length; AE.undo = []; AE.armed = false; AE.msg = ''; AE.cur = null;
   $('#aTitle').textContent = play ? play.nombre : 'Nueva jugada';
   if (!$('#player').classList.contains('hidden')) vid.pause();
   $('#animEd').classList.remove('hidden');
@@ -1334,13 +1392,14 @@ function aeView() {
   if (AE.sel === 0) return { st, pos: st[0].pos, ball: st[0].ball, trails: [], ghosts: null };
   const k = AE.sel - 1, s = AE.anim.steps[k], end = st[k + 1], ghosts = {};
   const trails = Object.entries(s.moves).map(([id, pts]) => { ghosts[id] = st[k].pos[id]; return { tool: 'move', color: TRAIL, pts }; });
-  const ps = validPass(s, st[k].ball);
+  const ps = validPass(s, st[k].ball, st[k].pos);
   if (ps) trails.push({ tool: 'pass', color: TRAIL, pts: [end.pos[st[k].ball], end.pos[ps.to]] });
   return { st, pos: end.pos, ball: end.ball, trails, ghosts, holder: st[k].ball };
 }
 function aeHint() {
   if (AE.msg) return AE.msg;
   if (!AEM.paused) return 'Reproduciendo… toca la pista para parar.';
+  if (AE.paint) return `Pintando en ${AE.sel ? 'el paso ' + AE.sel : 'el inicio'}: aparece al llegar aquí. 📌 lo mantiene en el paso siguiente. ✏️ para volver a mover jugadores.`;
   if (AE.sel === 0) return 'Arrastra a los jugadores a su sitio y toca a un atacante para darle el balón. Luego pulsa ＋ Paso.';
   if (AE.armed) return 'Ahora toca al atacante que recibe el pase (o al que tiene el balón para cancelar).';
   return `Paso ${AE.sel}: arrastra a cada jugador por donde corre. Pase: toca al que tiene el balón y luego al receptor.`;
@@ -1354,12 +1413,14 @@ function aeRender() {
   $('#aHint').textContent = aeHint();
   $('#aPlay').textContent = AEM.paused ? '▶︎' : '■';
   $('#aDel').disabled = AE.sel === 0; $('#aUndo').disabled = !AE.undo.length;
-  $('#aDef').textContent = '🛡 ' + (AE.anim.def || 'Sin');
+  $('#aPaint').classList.toggle('on', AE.paint);
+  $('#aPal').classList.toggle('hidden', !AE.paint);
+  $('#aKeep').classList.toggle('on', stepDraw(AE.anim, AE.sel).keep);
   if (!AEM.paused) return;   // la vista previa pinta sola
-  const v = aeView(), ctx = aScene.getContext('2d'), W = aScene.width, H = aScene.height;
+  const v = aeView(), dv = visibleDraw(AE.anim)[AE.sel], ctx = aScene.getContext('2d'), W = aScene.width, H = aScene.height;
   ctx.clearRect(0, 0, W, H);
-  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]), labels: AE.anim.labels },
-    { trails: v.trails, ghosts: v.ghosts, hl: AE.armed ? v.holder : null });
+  drawScene(ctx, W, H, { pos: v.pos, ball: ballXY(v.pos[v.ball]), labels: AE.anim.labels, strokes: AE.cur ? dv.own.concat([AE.cur]) : dv.own },
+    { trails: v.trails, ghosts: v.ghosts, faded: dv.inh, hl: AE.armed ? v.holder : null });
 }
 function aeSnap() { AE.undo.push(JSON.stringify(AE.anim)); if (AE.undo.length > 100) AE.undo.shift(); }
 function aePt(e) {
@@ -1372,9 +1433,25 @@ function aeHit(p, pos) {
   for (const id in pos) { const d = Math.hypot((pos[id][0] - p[0]) * W, (pos[id][1] - p[1]) * H); if (d < lim && d < bd) { bd = d; best = id; } }
   return best;
 }
+// lista de trazos propios de la fase seleccionada (se crea si no existe)
+function aeOwn() { const o = AE.sel === 0 ? AE.anim : AE.anim.steps[AE.sel - 1]; return o.draw || (o.draw = []); }
+function aeErase(p) {
+  const own = aeOwn(), keep = own.filter(s => !strokeNear(s, p, aScene.width, aScene.height));
+  if (keep.length !== own.length) { own.length = 0; own.push(...keep); return true; }
+  return false;
+}
 aScene.addEventListener('pointerdown', e => {
   if (!AEM.paused) { AEM.pause(); return; }
   if (AE.drag) return;
+  if (AE.paint) {
+    e.preventDefault();
+    aScene.setPointerCapture(e.pointerId);
+    const p = aePt(e);
+    AE.drag = { paint: true, pid: e.pointerId, snap: JSON.stringify(AE.anim), changed: false };
+    if (AE.tool === 'erase') AE.drag.changed = aeErase(p);
+    else AE.cur = { tool: AE.tool, color: AE.color, pts: [[r4(p[0]), r4(p[1])]] };
+    aeRender(); return;
+  }
   const p = aePt(e), v = aeView(), id = aeHit(p, v.pos);
   if (!id) return;
   e.preventDefault();
@@ -1387,6 +1464,13 @@ aScene.addEventListener('pointermove', e => {
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   for (const ev of (evs.length ? evs : [e])) {
     const p = aePt(ev);
+    if (d.paint) {
+      if (AE.tool === 'erase') { if (aeErase(p)) d.changed = true; continue; }
+      const q = [r4(p[0]), r4(p[1])], c = AE.cur;
+      if (c.tool === 'pass') c.pts[1] = q;
+      else { const last = c.pts[c.pts.length - 1]; if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.002) c.pts.push(q); }
+      continue;
+    }
     if (!d.moved && Math.hypot((p[0] - d.p0[0]) * aScene.clientWidth, (p[1] - d.p0[1]) * aScene.clientHeight) < 8) continue;
     d.moved = true;
     const q = [r4(Math.min(1, Math.max(0, p[0] + d.off[0]))), r4(Math.min(1, Math.max(0, p[1] + d.off[1])))];
@@ -1401,6 +1485,15 @@ aScene.addEventListener('pointermove', e => {
 function aeUp(e) {
   const d = AE.drag; if (!d || e.pointerId !== d.pid) return;
   AE.drag = null;
+  if (d.paint) {
+    if (AE.cur) {
+      const c = AE.cur; AE.cur = null;
+      if (c.tool === 'pass' && c.pts.length < 2) c.pts.push(c.pts[0].slice());
+      aeOwn().push(c); d.changed = true;
+    }
+    if (d.changed) AE.undo.push(d.snap);
+    aeRender(); return;
+  }
   if (d.moved) { AE.undo.push(d.snap); aeRender(); return; }
   if (e.type === 'pointerup') aeTap(d.id);
 }
@@ -1437,30 +1530,88 @@ $('#aAdd').onclick = () => {
 $('#aDel').onclick = () => {
   if (AE.sel === 0) return;
   const k = AE.sel - 1, s = AE.anim.steps[k];
-  if ((Object.keys(s.moves).length || s.pass) && !confirm('¿Borrar el paso ' + AE.sel + '?')) return;
+  if ((Object.keys(s.moves).length || s.pass || (s.draw || []).length) && !confirm('¿Borrar el paso ' + AE.sel + '?')) return;
   AEM.pause(); aeSnap();
   const before = animStates(AE.anim)[k].pos;
   AE.anim.steps.splice(k, 1);
   for (const id in s.moves) reanchor(AE.anim, k - 1, id, before[id]);
   AE.sel = Math.min(AE.sel, AE.anim.steps.length); AE.armed = false; aeRender();
 };
-// 🛡 defensa: sin → 6:0 → 5:1
-$('#aDef').onclick = () => {
-  const a = AE.anim, order = [null, '6:0', '5:1'], next = order[(order.indexOf(a.def || null) + 1) % order.length];
-  const moved = a.steps.some(s => Object.keys(s.moves).some(isDef));
-  if (moved && !confirm('Se perderán los movimientos de los defensores. ¿Cambiar la defensa?')) return;
-  AEM.pause(); aeSnap();
-  for (const id of Object.keys(a.pos)) if (isDef(id)) delete a.pos[id];
-  for (const s of a.steps) for (const id of Object.keys(s.moves)) if (isDef(id)) delete s.moves[id];
-  a.labels = {}; a.def = next;
-  if (next) DEF_SETS[next].forEach(([l, x, y], i) => { a.pos['X' + (i + 1)] = [x, y]; a.labels['X' + (i + 1)] = l; });
-  else { delete a.def; delete a.labels; }
-  AE.armed = false; aeRender();
+/* ---- pintar en la animación ---- */
+$('#aPaint').onclick = () => { AEM.pause(); AE.paint = !AE.paint; AE.armed = false; aeRender(); };
+$('#aTools').addEventListener('click', e => {
+  const b = e.target.closest('.tb'); if (!b) return;
+  AE.tool = b.dataset.tool;
+  $('#aTools').querySelectorAll('.tb').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#aColors').addEventListener('click', e => {
+  const b = e.target.closest('.sw'); if (!b) return;
+  AE.color = b.dataset.c;
+  $('#aColors').querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x === b));
+  if (AE.tool === 'erase') $('#aTools [data-tool="free"]').click();
+});
+$('#aKeep').onclick = () => {
+  aeSnap();
+  const o = AE.sel === 0 ? AE.anim : AE.anim.steps[AE.sel - 1];
+  if (o.keep) delete o.keep; else o.keep = true;
+  aeFlash(o.keep ? '📌 Lo pintado aquí seguirá en el paso siguiente.' : 'Lo pintado aquí desaparecerá en el paso siguiente.');
 };
+$('#aClr').onclick = () => { if (!aeOwn().length) return; aeSnap(); aeOwn().length = 0; aeRender(); };
+
+/* ---- jugadores: defensa base, añadir y quitar ---- */
+const attIds = a => Object.keys(a.pos).filter(id => !isDef(id));
+const pLabel = (a, id) => (a.labels && a.labels[id]) || id;
+function removePlayer(a, id) {
+  delete a.pos[id];
+  if (a.labels) delete a.labels[id];
+  for (const s of a.steps) { delete s.moves[id]; if (s.pass && s.pass.to === id) s.pass = null; }
+  if (a.ball === id) a.ball = attIds(a)[0];
+}
+function setDefense(a, kind) {
+  for (const id of Object.keys(a.pos)) if (isDef(id)) removePlayer(a, id);
+  if (kind) { a.def = kind; a.labels = a.labels || {}; DEF_SETS[kind].forEach(([l, x, y], i) => { a.pos['X' + (i + 1)] = [x, y]; a.labels['X' + (i + 1)] = l; }); }
+  else delete a.def;
+}
+function renderRoster() {
+  const a = AE.anim, chip = (id, cls) => `<button class="chip ${cls}" data-id="${esc(id)}">${esc(pLabel(a, id))}<span class="x">✕</span></button>`;
+  $('#rDef').innerHTML = [[null, 'Sin defensa'], ['6:0', '6:0'], ['5:1', '5:1']]
+    .map(([k, l]) => `<button class="chip ${(a.def || null) === k ? 'on' : ''}" data-def="${k || ''}">${l}</button>`).join('');
+  $('#rAtt').innerHTML = attIds(a).map(id => chip(id, 'att')).join('');
+  $('#rDefs').innerHTML = Object.keys(a.pos).filter(isDef).map(id => chip(id, 'def')).join('') || '<span class="note">Ninguno</span>';
+}
+function addPlayer(def) {
+  const a = AE.anim, label = $('#rLabel').value.trim().toUpperCase().slice(0, 3) || (def ? 'D' : 'A');
+  let n = 1, id; do id = (def ? 'X' : 'A') + n++; while (a.pos[id] || ATT.includes(id));
+  aeSnap();
+  a.labels = a.labels || {}; a.labels[id] = label;
+  const used = Object.values(a.pos), spot = (def ? [[0.55, 0.40], [0.55, 0.60], [0.50, 0.30], [0.50, 0.70]] : [[0.45, 0.40], [0.45, 0.60], [0.35, 0.35], [0.35, 0.65]])
+    .find(p => used.every(u => adist(u, p) > 0.07)) || [0.5, 0.5];
+  a.pos[id] = spot.slice();
+  $('#rLabel').value = '';
+  renderRoster(); aeRender();
+}
+$('#aRoster').onclick = () => { AEM.pause(); AE.armed = false; renderRoster(); $('#roster').classList.remove('hidden'); };
+$('#rDone').onclick = () => { $('#roster').classList.add('hidden'); document.activeElement && document.activeElement.blur(); };
+$('#rAddA').onclick = () => addPlayer(false);
+$('#rAddD').onclick = () => addPlayer(true);
+$('#rDef').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const a = AE.anim, kind = b.dataset.def || null;
+  if ((a.def || null) === kind) return;
+  if (a.steps.some(s => Object.keys(s.moves).some(isDef)) && !confirm('Se perderán los defensores actuales y sus movimientos. ¿Cambiar la defensa?')) return;
+  aeSnap(); setDefense(a, kind); renderRoster(); aeRender();
+});
+$('#roster').addEventListener('click', e => {
+  const b = e.target.closest('.chip[data-id]'); if (!b) return;
+  const a = AE.anim, id = b.dataset.id;
+  if (!isDef(id) && attIds(a).length <= 1) { alert('Tiene que quedar al menos un atacante.'); return; }
+  aeSnap(); removePlayer(a, id); renderRoster(); aeRender();
+});
 $('#aUndo').onclick = () => {
   if (!AE.undo.length) return;
   AEM.pause(); AE.anim = JSON.parse(AE.undo.pop());
   AE.sel = Math.min(AE.sel, AE.anim.steps.length); AE.armed = false; aeRender();
+  if (!$('#roster').classList.contains('hidden')) renderRoster();
 };
 $('#aPlay').onclick = () => {
   if (!AEM.paused) { AEM.pause(); return; }
