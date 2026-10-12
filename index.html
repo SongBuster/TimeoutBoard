@@ -373,7 +373,7 @@ header.top h1 span{color:var(--accent)}
 
 <script>
 'use strict';
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 
 /* =========================================================
    IndexedDB
@@ -646,7 +646,8 @@ const DEF_SETS = {
 };
 const DEFAULT_POS = { EI: [0.80, 0.135], LI: [0.48, 0.17], CT: [0.40, 0.50], LD: [0.48, 0.83], ED: [0.80, 0.865], PI: [0.61, 0.50] };
 const A_HOLD0 = 1, A_GAP = 0.25, A_HOLD_END = 1.5, A_STEP_MIN = 1, A_SPEED = 0.22, A_BALL_SPEED = 0.7, A_SHOT_SPEED = 1.1;
-const BALL_OFF = [0.04, 0.035];
+// el balón va delante del jugador (hacia la portería), a su altura, montado sobre el borde del círculo
+const BALL_OFF = [0.041, 0];
 const TRAIL = '#10202a';
 const r4 = v => Math.round(v * 1e4) / 1e4;
 const clonePos = pos => Object.fromEntries(Object.entries(pos).map(([k, v]) => [k, v.slice()]));
